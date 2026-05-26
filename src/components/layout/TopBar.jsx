@@ -1,0 +1,61 @@
+import { PERIOD_PAGES, LOGO } from '../../constants'
+
+export default function TopBar({
+  page, tr, period, setPeriod, lang, setLang, theme, setTheme,
+  isAdmin, loading, notifications, notificationCount, notificationKey,
+  showNotifications, openNotifications, changePage, markAllRead,
+  setNotificationsSeenKey, exportAllData, loadAll
+}) {
+  return (
+    <header className="topbar entrance">
+      <div className="topbarInfo">
+        <h1>{tr[page] || tr.welcome}</h1>
+        <p>{new Date().toLocaleString('uz-UZ')}</p>
+      </div>
+      <div className="topActions">
+        {PERIOD_PAGES.includes(page) && (
+          <>
+            <input type="date" value={period.start} onChange={e => setPeriod({ ...period, start: e.target.value })} />
+            <input type="date" value={period.end}   onChange={e => setPeriod({ ...period, end: e.target.value })} />
+          </>
+        )}
+        <div className="langBox">
+          <span className={`flagBadge ${lang === 'ru' ? 'ru' : lang === 'cy' ? 'cy' : 'uz'}`} />
+          <select className="langSelect" value={lang} onChange={e => setLang(e.target.value)}>
+            <option value="uz">UZ</option>
+            <option value="cy">ЎЗ</option>
+            <option value="ru">RU</option>
+          </select>
+        </div>
+        <div className="notificationWrap">
+          <button className="iconBtn notificationButton" onClick={openNotifications}>
+            <span>Bildirishnoma</span>
+            {notificationCount > 0 && <em className="topBadge">{notificationCount}</em>}
+          </button>
+          {showNotifications && (
+            <div className="notificationPanel">
+              <b>Bildirishnomalar</b>
+              {notifications.length === 0 && <p>Yangi bildirishnoma yo'q</p>}
+              {notifications.map(n => (
+                <button className="notificationItem" key={n.id} onClick={() => {
+                  changePage(n.page)
+                  if (n.page === 'chat') markAllRead()
+                  localStorage.setItem('finance_notifications_seen_key', notificationKey)
+                  setNotificationsSeenKey(notificationKey)
+                }}>
+                  <strong>{n.title}</strong><span>{n.text}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <button className={`themeSwitch ${theme === 'dark' ? 'active' : ''}`}
+          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+          <span className="themeKnob">{theme === 'light' ? '☀️' : '🌙'}</span>
+        </button>
+        {isAdmin && <button className="secondary backupBtn" onClick={exportAllData} title="Backup">💾 Backup</button>}
+        <button className="refreshBtn" onClick={loadAll}>{tr.refresh}</button>
+      </div>
+    </header>
+  )
+}
