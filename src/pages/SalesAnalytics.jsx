@@ -13,9 +13,9 @@ export default function SalesAnalytics({ tr, data }) {
         <div className="card premium"><span>Kunlar soni</span><b>{data.trend.length}</b></div>
       </div>
       <BranchRanking rows={data.branchRows} />
-      <Chart title ={tr.trend} rows={data.trend} emptyText={tr.noData} />
-<Chart title={tr.branchSales} rows={data.branchRows} emptyText={tr.noData} />
-{data.methodRows.length > 0 && <Chart title="To'lov usullari" rows={data.methodRows} emptyText={tr.noData} />}
-</div>
-)
+      <Chart title={tr.trend}       rows={data.trend}      emptyText={tr.noData} />
+      <Chart title={tr.branchSales} rows={data.branchRows} emptyText={tr.noData} />
+      {data.methodRows.length > 0 && <Chart title="To'lov usullari" rows={data.methodRows} emptyText={tr.noData} />}
+    </div>
+  )
 }

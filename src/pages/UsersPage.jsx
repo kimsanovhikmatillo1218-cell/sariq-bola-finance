@@ -38,7 +38,7 @@ export default function UsersPage({ tr, users, branches, newUser, setNewUser, sa
             <label key={m} className="checkItem">
               <input type="checkbox" checked={newUser.modules.includes(m)}
                 onChange={() => setNewUser({ ...newUser, modules: toggle(newUser.modules, m) })} />
-              {m}
+              {tr[m] || m}
             </label>
           ))}
         </div>
@@ -55,7 +55,7 @@ export default function UsersPage({ tr, users, branches, newUser, setNewUser, sa
                 <td>{i + 1}</td>
                 <td><img src={avatarSrc(u)} style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover' }} alt="" /></td>
                 <td>{u.full_name}</td><td>{u.login}</td><td>{u.role}</td>
-                <td><span className={isOnline(u) ? 'onlineDot' : 'offlineDot'}>{isOnline(u) ? '🟢' : '⚫'}</span></td>
+                <td><span className={`typeBadge ${isOnline(u) ? 'income' : 'outcome'}`}>{isOnline(u) ? '🟢 Online' : '⚫ Offline'}</span></td>
                 <td>
                   <button onClick={() => edit(u)}>✏️</button>
                   <button onClick={() => deactivate(u)}>🗑</button>

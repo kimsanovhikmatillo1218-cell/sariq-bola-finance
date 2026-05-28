@@ -92,7 +92,7 @@ export default function OperationsTable({
                 )}
                 <td>{r.branches?.name}</td>
                 <td>{new Date(r.created_at).toLocaleString('uz-UZ')}</td>
-                <td><span className={`typeBadge ${r.type === OP_TYPE.INCOME ? 'income' : 'expense'}`}>{r.type === OP_TYPE.INCOME ? tr.income : tr.outcome}</span></td>
+                <td><span className={`typeBadge ${r.type === OP_TYPE.INCOME ? 'income' : 'outcome'}`}>{r.type === OP_TYPE.INCOME ? tr.income : tr.outcome}</span></td>
                 <td>{catName(r.categories)}</td>
                 <td>{r.account}</td>
                 <td className={r.type === OP_TYPE.INCOME ? 'green' : 'red'}>{money(r.amount)}</td>

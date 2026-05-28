@@ -1,8 +1,8 @@
-import { PERIOD_PAGES, LOGO } from '../../constants'
+import { PERIOD_PAGES } from '../../constants'
 
 export default function TopBar({
   page, tr, period, setPeriod, lang, setLang, theme, setTheme,
-  isAdmin, loading, notifications, notificationCount, notificationKey,
+  isAdmin, notifications, notificationCount, notificationKey,
   showNotifications, openNotifications, changePage, markAllRead,
   setNotificationsSeenKey, exportAllData, loadAll
 }) {
@@ -34,7 +34,10 @@ export default function TopBar({
           </button>
           {showNotifications && (
             <div className="notificationPanel">
-              <b>Bildirishnomalar</b>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:9 }}>
+                <b>Bildirishnomalar</b>
+                <button onClick={openNotifications} style={{ background:'none', border:'none', color:'var(--muted)', fontSize:16, padding:'2px 6px', borderRadius:8, cursor:'pointer' }}>✕</button>
+              </div>
               {notifications.length === 0 && <p>Yangi bildirishnoma yo'q</p>}
               {notifications.map(n => (
                 <button className="notificationItem" key={n.id} onClick={() => {
@@ -42,6 +45,7 @@ export default function TopBar({
                   if (n.page === 'chat') markAllRead()
                   localStorage.setItem('finance_notifications_seen_key', notificationKey)
                   setNotificationsSeenKey(notificationKey)
+                  openNotifications()
                 }}>
                   <strong>{n.title}</strong><span>{n.text}</span>
                 </button>

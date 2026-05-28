@@ -1,165 +1,422 @@
-export const BASE = '/sariq-bola-finance/'
-export const LOGO = BASE + 'logo.png'
-export const BRANCH_ORDER = ['PROSPEKT','MAKRO','QOQON','TOSHKENT']
-export const ACCOUNTS = ['Naqd','Hisob raqam']
+export const BASE         = import.meta.env.VITE_SUPABASE_URL
+export const LOGO         = '/icons.svg'
+export const BRANCH_ORDER = ['PROSPEKT','MAKRO',"QO'QON",'ANDIJON']
+export const ACCOUNTS     = ['Naqd','Hisob raqam']
+export const OP_TYPE      = { INCOME:'Kirim', EXPENSE:'Chiqim' }
+export const CASH_ST      = { PENDING:'PENDING', APPROVED:'APPROVED' }
+export const SALARY_T     = { HOURLY:'hourly', MONTHLY:'monthly' }
+export const TG_FN        = 'send-telegram'
+export const SIGN_IN_RPC  = 'sign_in'
+export const HASH_RPC     = 'hash_password'
+export const PERIOD_PAGES = ['orderReports','history','reports','cash','payroll','payrollArchive']
+
 export const MODULES = [
-  'dashboard','salesAnalytics','order','orderReports','cash',
-  'operation','history','reports','employees','payroll',
-  'payrollArchive','categories','users','chat','profile'
+  'dashboard','salesAnalytics',
+  'orderReports','order',
+  'operation',
+  'history','reports',
+  'cash',
+  'employees','payroll','payrollArchive',
+  'categories','branches','users',
+  'chat','profile'
 ]
+
 export const ROLE_LABELS = {
-  ADMIN:'Admin', RAHBAR:'Rahbar', BOSH_MANAGER:'Bosh menejer',
-  FILIAL_MANAGER:'Filial menejer', SMENA_MANAGER:'Smena menejer', BUXGALTER:'Buxgalter'
+  ADMIN:'Admin', RAHBAR:'Rahbar',
+  BOSH_MANAGER:'Bosh menejer', FILIAL_MANAGER:'Filial menejer',
+  SMENA_MANAGER:'Smena menejer', BUXGALTER:'Buxgalter'
 }
-export const OP_TYPE    = { INCOME:'Kirim', EXPENSE:'Chiqim' }
-export const CASH_ST    = { PENDING:'PENDING', APPROVED:'APPROVED' }
-export const SALARY_T   = { HOURLY:'hourly', MONTHLY:'monthly' }
-export const TG_FN      = 'telegram-send'
-export const SIGN_IN_RPC = 'finance_sign_in'
-export const HASH_RPC    = 'finance_hash_password'
-export const PERIOD_PAGES = [
-  'dashboard','salesAnalytics','orderReports','history','reports','payrollArchive'
-]
+
 export const ROLE_MODULES = {
-  RAHBAR:       ['dashboard','salesAnalytics','orderReports','history','reports','payrollArchive','chat','profile'],
-  BOSH_MANAGER: ['dashboard','salesAnalytics','orderReports','history','reports','chat','profile'],
-  FILIAL_MANAGER:['dashboard','salesAnalytics','orderReports','reports','chat','profile'],
-  SMENA_MANAGER: ['order','chat','profile'],
-  BUXGALTER:    ['dashboard','cash','operation','history','reports','employees','payroll','payrollArchive','chat','profile']
+  ADMIN:          MODULES,
+  RAHBAR:         MODULES,
+  BOSH_MANAGER:   ['dashboard','salesAnalytics','orderReports','order','operation','history','reports','cash','employees','payroll','payrollArchive','chat','profile'],
+  FILIAL_MANAGER: ['dashboard','orderReports','order','operation','history','cash','employees','payroll','chat','profile'],
+  SMENA_MANAGER:  ['dashboard','order','operation','history','cash','chat','profile'],
+  BUXGALTER:      ['dashboard','salesAnalytics','history','reports','cash','payroll','payrollArchive','chat','profile'],
+  // lowercase aliases (future-proof)
+  admin:          MODULES,
+  manager:        ['dashboard','salesAnalytics','orderReports','order','operation','history','reports','cash','employees','payroll','payrollArchive','chat','profile'],
+  accountant:     ['dashboard','salesAnalytics','history','reports','cash','payroll','payrollArchive','chat','profile'],
+  cashier:        ['dashboard','order','operation','history','cash','chat','profile']
 }
 
 export const TEXT = {
-  uz:{
-    dashboard:'Dashboard', salesAnalytics:'Savdo analitika', order:'Smena order',
-    orderReports:'Filial orderlari', cash:'Inkassatsiya', operation:'Kirim / Chiqim',
-    history:'Operatsiyalar', reports:'Hisobotlar', employees:'Xodimlar',
-    payroll:'Oylik hisoblash', payrollArchive:'Oylik arxivi', categories:'Kategoriyalar',
-    users:'Foydalanuvchilar', chat:'Chat', profile:'Profil', logout:'Chiqish',
-    welcome:'Xush kelibsiz', refresh:'Yangilash', save:'Saqlash', create:'Yaratish',
-    edit:'Tahrirlash', delete:"O'chirish", cancel:'Bekor qilish', start:'Boshlanish',
-    end:'Tugash', branch:'Filial', all:'Umumiy', cashBalance:'Naqd balans',
-    bankBalance:'Hisob raqam balans', incomeChart:"Kirimlar kategoriyalar bo'yicha",
-    expenseChart:"Chiqimlar kategoriyalar bo'yicha", branchSales:"Filiallar bo'yicha savdo",
-    trend:'Savdo trendi', totalSales:'Jami savdo', growth:"O'sish / pasayish",
-    noData:"Ma'lumot yo'q", date:'Sana', shift:'Smena', total:'Jami savdo',
-    uzcard:'Uzcard', humo:'Humo', rahmat:'Rahmat', rxmt:'RXMT', uzum:'Uzum', yandex:'Yandex',
-    expense:'Xarajat', gum:'Jvachka soni', cashAmount:'Naqd summa',
-    type:'Tur', account:'Hisob', category:'Kategoriya', amount:'Summa', note:'Izoh',
-    income:'Kirim', outcome:'Chiqim', fullName:'Ism-familya', login:'Login',
-    password:'Parol', role:'Lavozim', access:'Dostup', position:'Lavozim',
-    hireDate:'Ishga kirgan sana', salaryType:'Ish haqi turi', hourly:'Soatbay',
-    monthly:'Oylik', hourlyRate:'Soatiga', monthlySalary:'Oylik stavka',
-    workedHours:'Ishlagan soat', extraHours:"Qo'shimcha soat", tax:"Daromad solig'i",
-    lunch:'Tushlik', penalty:'Jarima', advance:'Avans', bonus:'Premiya',
-    cashPaid:'Naqd berildi', cardPaid:'Plastik berildi', remaining:'Qoldiq',
-    signature:'Imzo', exportExcel:'Excel yuklab olish', uploadPhoto:'Rasm yuklash',
-    send:'Yuborish', chooseUser:'Foydalanuvchi tanlang', actions:'Amal', status:'Status',
-    expected:'Kutilgan', accepted:'Qabul', difference:'Farq',
-    categoryNameNeeded:'Kategoriya nomi kerak', categoryAdded:"Kategoriya qo'shildi",
-    categoryUpdated:'Kategoriya yangilandi', categoryDeleted:"Kategoriya o'chirildi",
-    saved:'Saqlandi', deleted:"O'chirildi", chooseBranch:'Filial tanlang',
-    adminOnly:"Faqat admin amalga oshira oladi", loginRequired:'Login va parol kiriting',
-    loginError:'Login yoki parol xato', confirmDelete:"Rostdan o'chirasizmi?",
-    userLoginBusy:'Bu login band', userNameRequired:'Ism va login majburiy',
-    passwordRequired:'Yangi foydalanuvchi uchun parol majburiy',
-    employeeNameRequired:'Xodim ismi kerak', payrollPeriodRequired:'Oylik davrini tanlang',
-    payrollStartEndError:"Boshlanish sanasi tugash sanasidan katta bo'lmasin",
-    payrollNoEmployees:"Filial tanlang yoki xodim yo'q",
-    categoryRequired:'Kategoriya va summa majburiy', orderTotalRequired:'Jami savdo majburiy',
-    alreadyApproved:'Bu inkassatsiya allaqachon tasdiqlangan',
-    backupAdminOnly:'Faqat admin backup olishi mumkin',
-    importNoRows:'Import uchun mos qator topilmadi',
-    importOrdersNoRows:'Import uchun mos order topilmadi',
-    noSelected:"Tanlangan qator yo'q", telegramSaved:'Telegram sozlamalari saqlandi',
-    telegramTest:'Yuborilmoqda...', telegramOk:'✅ Test xabari yuborildi!',
-    telegramErr:'❌ Telegram xatosi: ',
+  uz: {
+    /* ── Navigation ── */
+    dashboard:'Boshqaruv', salesAnalytics:'Savdo tahlili',
+    order:'Order kiritish', orderReports:'Order hisoboti',
+    operation:'Kirim / Chiqim kiritish',
+    history:'Operatsiyalar tarixi',
+    reports:'Hisobotlar', cash:'Inkassatsiya',
+    employees:'Xodimlar', payroll:'Maosh', payrollArchive:'Maosh arxivi',
+    categories:'Toifalar', branches:'Filiallar', users:'Foydalanuvchilar',
+    chat:'Chat', profile:'Profil', settings:'Sozlamalar',
+    logout:'Chiqish',
+
+    /* ── Actions ── */
+    save:'Saqlash', cancel:'Bekor', delete:"O'chirish",
+    edit:'Tahrirlash', add:"Qo'shish", create:'Yaratish',
+    search:'Qidirish', filter:'Filtr',
+    export:'Eksport', exportExcel:'Excel eksport',
+    import:'Import', approve:'Tasdiqlash',
+    refresh:'Yangilash', actions:'Amallar',
+    send:'Yuborish', yes:"Ha", no:"Yo'q",
+
+    /* ── Common fields ── */
+    amount:'Summa', date:'Sana', branch:'Filial',
+    category:'Toifa', description:'Izoh', note:'Izoh',
+    account:'Hisob', type:'Tur', status:'Holati',
+    start:'Boshlanish', end:'Tugash',
+    fullName:"To'liq ism", role:'Rol', phone:'Telefon', email:'Email',
+    login:'Login', password:'Parol',
+
+    /* ── Finance ── */
+    income:'Kirim', expense:'Xarajat', outcome:'Chiqim',
+    pending:'Kutilmoqda', approved:'Tasdiqlangan',
+    total:'Jami', profit:'Foyda', balance:'Balans',
+    totalIncome:'Jami kirim', totalExpense:'Jami chiqim', totalOrders:'Buyurtmalar',
+    cashBalance:'Naqd balans', bankBalance:'Bank balans',
+    expected:'Kutilgan', accepted:'Qabul qilingan', difference:'Farq',
+    expectedAmount:'Kutilgan summa', actualAmount:'Haqiqiy summa',
+    all:'Barchasi', allBranches:'Barcha filiallar',
+    allTypes:'Barcha turlar', allCategories:'Barcha toifalar',
+    allAccounts:'Barcha hisoblar',
+
+    /* ── Order form ── */
+    shift:'Smena', uzcard:'Uzcard', humo:'Humo',
+    rahmat:'Rahmat', rxmt:'RXMT', uzum:'Uzum',
+    yandex:'Yandex', gum:'Jvachka',
+    cashAmount:'Naqd summa', cardAmount:'Plastik',
+    deliveryAmount:'Yetkazib berish', orderCount:'Buyurtmalar soni',
+
+    /* ── Analytics ── */
+    totalSales:'Jami savdo', growth:"O'sish",
+    trend:'Kunlik trend', branchSales:"Filiallar bo'yicha",
+    incomeChart:'Kirimlar', expenseChart:'Chiqimlar',
+
+    /* ── Employees / Payroll ── */
+    position:'Lavozim', salaryType:'Maosh turi', salaryRate:'Stavka',
+    hourly:'Soatlik', monthly:'Oylik', workDays:'Ish kunlari',
+    hireDate:'Ishga qabul sanasi',
+    hourlyRate:'Soatlik narx', monthlySalary:'Oylik maosh',
+    hoursWorked:'Ishlagan soat', workedHours:'Ishlagan soat',
+    extraHours:"Qo'shimcha soat",
+    bonus:'Bonus', deduction:'Ushlab qolish',
+    tax:'Soliq', lunch:'Tushlik', penalty:'Jarima', advance:'Avans',
+    cashPaid:"Naqd to'lov", cardPaid:"Plastik to'lov",
+    netAmount:'Sof maosh', remaining:'Qoldiq',
+    period:'Davr', periodStart:'Davr boshi', periodEnd:'Davr oxiri',
+    archivePayroll:'Arxivlash', payNow:"To'lash",
+    totalEmployees:'Xodimlar soni',
+
+    /* ── Users ── */
+    active:'Faol', inactive:'Faol emas', deactivate:'Bloklash',
+    access:'Kirish huquqlari', modules:'Modullar',
+    sum:"so'm", hr:'soat', days:'kun',
+    online:'Online', offline:'Offline',
+
+    /* ── Profile ── */
+    uploadAvatar:'Rasm yuklash', uploadPhoto:'📷 Rasm yuklash',
+    changePassword:"Parolni o'zgartirish",
+    oldPass:'Eski parol', newPass:'Yangi parol',
+    companyName:'Kompaniya nomi', address:'Manzil',
+    botToken:'Bot token', chatId:'Chat ID',
+    testTelegram:'Test yuborish',
+    tgConnected:'Telegram ulangan', tgNotConnected:'Telegram ulanmagan',
+
+    /* ── Login ── */
+    rememberMe:'Eslab qolish', loginBtn:'Tizimga kirish',
+    loading:'Yuklanmoqda...', noData:"Ma'lumot yo'q",
+    confirmDelete:"O'chirishni tasdiqlaysizmi?",
+
+    /* ── Notifications ── */
+    saveOk:'Saqlandi!', deleteOk:"O'chirildi!",
+    err:'Xatolik!', approveOk:'Tasdiqlandi!',
+
+    /* ── Chat ── */
+    typeMsg:'Xabar yozing...',
+    noMessages:"Xabarlar yo'q", selectUser:'Foydalanuvchini tanlang',
+
+    /* ── Validation messages (used in useAppData) ── */
+    welcome:'Xush kelibsiz',
+    chooseBranch:'Avval filial tanlang',
+    categoryRequired:"Kategoriya va summa kiritilishi shart",
+    loginRequired:'Login va parol kiriting',
+    loginError:'Login yoki parol xato',
+    payrollPeriodRequired:"Davr boshi va oxiri kiritilishi shart",
+    payrollStartEndError:"Davr boshi oxiridan katta bo'lmasin",
+    payrollNoEmployees:"Xodimlar yo'q — avval filial tanlang",
+    adminOnly:'Faqat admin uchun ruxsat bor',
+    noSelected:'Avval qatorlarni tanlang',
+    employeeNameRequired:"Xodim ismi kiritilishi shart",
+    userNameRequired:"Ism va login kiritilishi shart",
+    passwordRequired:"Parol kiritilishi shart",
+    userLoginBusy:"Bu login allaqachon band",
+    categoryNameNeeded:"Kategoriya nomi kiritilishi shart",
+    categoryUpdated:'Kategoriya yangilandi',
+    categoryAdded:"Kategoriya qo'shildi",
+    categoryDeleted:"Kategoriya o'chirildi",
+    importNoRows:"Import uchun mos qatorlar topilmadi",
+    importOrdersNoRows:"Import uchun mos orderlar topilmadi",
+    orderTotalRequired:"Jami summa kiritilishi shart",
+    telegramSaved:'Telegram sozlamalari saqlandi',
+    telegramTest:'Test xabar yuborilmoqda...',
+    telegramOk:'Test xabar muvaffaqiyatli yuborildi ✅',
+    telegramErr:'Telegram xatosi: ',
+    backupAdminOnly:"Backup faqat admin uchun",
+    alreadyApproved:'Allaqachon tasdiqlangan',
   },
-  ru:{
-    dashboard:'Дашборд', salesAnalytics:'Аналитика продаж', order:'Сменный отчет',
-    orderReports:'Отчеты филиалов', cash:'Инкассация', operation:'Приход / Расход',
-    history:'Операции', reports:'Отчеты', employees:'Сотрудники',
-    payroll:'Расчет зарплаты', payrollArchive:'Архив зарплаты', categories:'Категории',
-    users:'Пользователи', chat:'Чат', profile:'Профиль', logout:'Выход',
-    welcome:'Добро пожаловать', refresh:'Обновить', save:'Сохранить', create:'Создать',
-    edit:'Изменить', delete:'Удалить', cancel:'Отмена', start:'Начало', end:'Конец',
-    branch:'Филиал', all:'Общий', cashBalance:'Наличные', bankBalance:'Расчетный счет',
-    incomeChart:'Приходы по категориям', expenseChart:'Расходы по категориям',
-    branchSales:'Продажи по филиалам', trend:'Динамика продаж', totalSales:'Общая продажа',
-    growth:'Рост / снижение', noData:'Нет данных', date:'Дата', shift:'Смена',
-    total:'Общая продажа', uzcard:'Uzcard', humo:'Humo', rahmat:'Rahmat',
-    rxmt:'RXMT', uzum:'Uzum', yandex:'Yandex', expense:'Расход', gum:'Кол-во жвачки',
-    cashAmount:'Сумма наличными', type:'Тип', account:'Счет', category:'Категория',
-    amount:'Сумма', note:'Комментарий', income:'Приход', outcome:'Расход',
-    fullName:'Ф.И.О', login:'Логин', password:'Пароль', role:'Должность', access:'Доступ',
-    position:'Должность', hireDate:'Дата приема', salaryType:'Тип оплаты',
-    hourly:'Почасовая', monthly:'Месячная', hourlyRate:'За час', monthlySalary:'Оклад',
-    workedHours:'Рабочие часы', extraHours:'Доп. часы', tax:'Подоходный налог',
-    lunch:'Обед', penalty:'Штраф', advance:'Аванс', bonus:'Премия',
-    cashPaid:'Наличными', cardPaid:'На карту', remaining:'Остаток', signature:'Подпись',
-    exportExcel:'Скачать Excel', uploadPhoto:'Загрузить фото', send:'Отправить',
-    chooseUser:'Выберите пользователя', actions:'Действие', status:'Статус',
-    expected:'Ожидалось', accepted:'Принято', difference:'Разница',
-    categoryNameNeeded:'Введите название', categoryAdded:'Категория добавлена',
-    categoryUpdated:'Категория обновлена', categoryDeleted:'Категория удалена',
-    saved:'Сохранено', deleted:'Удалено', chooseBranch:'Выберите филиал',
-    adminOnly:'Только администратор', loginRequired:'Введите логин и пароль',
-    loginError:'Неверный логин или пароль', confirmDelete:'Вы уверены?',
-    userLoginBusy:'Логин занят', userNameRequired:'Имя и логин обязательны',
-    passwordRequired:'Для нового пользователя пароль обязателен',
-    employeeNameRequired:'Введите имя сотрудника', payrollPeriodRequired:'Выберите период',
-    payrollStartEndError:'Начало не может быть позже конца',
-    payrollNoEmployees:'Выберите филиал или нет сотрудников',
-    categoryRequired:'Категория и сумма обязательны', orderTotalRequired:'Общая продажа обязательна',
-    alreadyApproved:'Инкассация уже подтверждена',
-    backupAdminOnly:'Только администратор может делать бэкап',
-    importNoRows:'Нет подходящих строк', importOrdersNoRows:'Нет подходящих отчётов',
-    noSelected:'Нет выбранных строк', telegramSaved:'Настройки Telegram сохранены',
-    telegramTest:'Отправка...', telegramOk:'✅ Тест отправлен!',
-    telegramErr:'❌ Ошибка Telegram: ',
+
+  ru: {
+    /* ── Navigation ── */
+    dashboard:'Панель', salesAnalytics:'Аналитика продаж',
+    order:'Ввод заказа', orderReports:'Отчёт заказов',
+    operation:'Приход / Расход',
+    history:'История операций',
+    reports:'Отчёты', cash:'Инкассация',
+    employees:'Сотрудники', payroll:'Зарплата', payrollArchive:'Архив зарплат',
+    categories:'Категории', branches:'Филиалы', users:'Пользователи',
+    chat:'Чат', profile:'Профиль', settings:'Настройки',
+    logout:'Выход',
+
+    /* ── Actions ── */
+    save:'Сохранить', cancel:'Отмена', delete:'Удалить',
+    edit:'Редактировать', add:'Добавить', create:'Создать',
+    search:'Поиск', filter:'Фильтр',
+    export:'Экспорт', exportExcel:'Экспорт Excel',
+    import:'Импорт', approve:'Утвердить',
+    refresh:'Обновить', actions:'Действия',
+    send:'Отправить', yes:'Да', no:'Нет',
+
+    /* ── Common fields ── */
+    amount:'Сумма', date:'Дата', branch:'Филиал',
+    category:'Категория', description:'Описание', note:'Комментарий',
+    account:'Счёт', type:'Тип', status:'Статус',
+    start:'Начало', end:'Конец',
+    fullName:'Полное имя', role:'Роль', phone:'Телефон', email:'Email',
+    login:'Логин', password:'Пароль',
+
+    /* ── Finance ── */
+    income:'Доход', expense:'Расход', outcome:'Расход',
+    pending:'Ожидание', approved:'Утверждено',
+    total:'Итого', profit:'Прибыль', balance:'Баланс',
+    totalIncome:'Общий доход', totalExpense:'Общий расход', totalOrders:'Заказы',
+    cashBalance:'Наличный баланс', bankBalance:'Банковский баланс',
+    expected:'Ожидаемая', accepted:'Принято', difference:'Разница',
+    expectedAmount:'Ожидаемая сумма', actualAmount:'Фактическая сумма',
+    all:'Все', allBranches:'Все филиалы',
+    allTypes:'Все типы', allCategories:'Все категории',
+    allAccounts:'Все счета',
+
+    /* ── Order form ── */
+    shift:'Смена', uzcard:'Uzcard', humo:'Humo',
+    rahmat:'Rahmat', rxmt:'RXMT', uzum:'Uzum',
+    yandex:'Yandex', gum:'Жвачка',
+    cashAmount:'Наличные', cardAmount:'Карта',
+    deliveryAmount:'Доставка', orderCount:'Кол-во заказов',
+
+    /* ── Analytics ── */
+    totalSales:'Общие продажи', growth:'Рост',
+    trend:'Ежедневный тренд', branchSales:'По филиалам',
+    incomeChart:'Доходы', expenseChart:'Расходы',
+
+    /* ── Employees / Payroll ── */
+    position:'Должность', salaryType:'Тип зарплаты', salaryRate:'Ставка',
+    hourly:'Почасовая', monthly:'Месячная', workDays:'Рабочие дни',
+    hireDate:'Дата приёма',
+    hourlyRate:'Почасовая ставка', monthlySalary:'Месячная зарплата',
+    hoursWorked:'Отработано часов', workedHours:'Отработано часов',
+    extraHours:'Доп. часы',
+    bonus:'Бонус', deduction:'Вычет',
+    tax:'Налог', lunch:'Обед', penalty:'Штраф', advance:'Аванс',
+    cashPaid:'Наличная оплата', cardPaid:'Оплата картой',
+    netAmount:'Чистая зарплата', remaining:'Остаток',
+    period:'Период', periodStart:'Начало', periodEnd:'Конец',
+    archivePayroll:'Архивировать', payNow:'Выплатить',
+    totalEmployees:'Сотрудников',
+
+    /* ── Users ── */
+    active:'Активный', inactive:'Неактивный', deactivate:'Блокировать',
+    access:'Доступ', modules:'Модули',
+    sum:'сум', hr:'час', days:'дней',
+    online:'Онлайн', offline:'Офлайн',
+
+    /* ── Profile ── */
+    uploadAvatar:'Загрузить фото', uploadPhoto:'📷 Загрузить фото',
+    changePassword:'Изменить пароль',
+    oldPass:'Старый пароль', newPass:'Новый пароль',
+    companyName:'Название компании', address:'Адрес',
+    botToken:'Bot token', chatId:'Chat ID',
+    testTelegram:'Тест',
+    tgConnected:'Telegram подключён', tgNotConnected:'Telegram не подключён',
+
+    /* ── Login ── */
+    rememberMe:'Запомнить', loginBtn:'Войти',
+    loading:'Загрузка...', noData:'Нет данных',
+    confirmDelete:'Подтвердить удаление?',
+
+    /* ── Notifications ── */
+    saveOk:'Сохранено!', deleteOk:'Удалено!',
+    err:'Ошибка!', approveOk:'Утверждено!',
+
+    /* ── Chat ── */
+    typeMsg:'Написать...',
+    noMessages:'Нет сообщений', selectUser:'Выберите пользователя',
+
+    /* ── Validation messages ── */
+    welcome:'Добро пожаловать',
+    chooseBranch:'Сначала выберите филиал',
+    categoryRequired:'Необходимо указать категорию и сумму',
+    loginRequired:'Введите логин и пароль',
+    loginError:'Неверный логин или пароль',
+    payrollPeriodRequired:'Укажите начало и конец периода',
+    payrollStartEndError:'Начало не должно быть позже конца',
+    payrollNoEmployees:'Нет сотрудников — выберите филиал',
+    adminOnly:'Доступно только администратору',
+    noSelected:'Сначала выберите записи',
+    employeeNameRequired:'Введите имя сотрудника',
+    userNameRequired:'Введите имя и логин',
+    passwordRequired:'Введите пароль',
+    userLoginBusy:'Этот логин уже занят',
+    categoryNameNeeded:'Введите название категории',
+    categoryUpdated:'Категория обновлена',
+    categoryAdded:'Категория добавлена',
+    categoryDeleted:'Категория удалена',
+    importNoRows:'Подходящие строки для импорта не найдены',
+    importOrdersNoRows:'Подходящие заказы для импорта не найдены',
+    orderTotalRequired:'Необходимо указать общую сумму',
+    telegramSaved:'Настройки Telegram сохранены',
+    telegramTest:'Отправка тестового сообщения...',
+    telegramOk:'Тестовое сообщение успешно отправлено ✅',
+    telegramErr:'Ошибка Telegram: ',
+    backupAdminOnly:'Резервная копия только для администратора',
+    alreadyApproved:'Уже утверждено',
   },
-  cy:{
-    dashboard:'Дашборд', salesAnalytics:'Савдо аналитика', order:'Смена ордер',
-    orderReports:'Филиал ордерлари', cash:'Инкассация', operation:'Кирим / Чиқим',
-    history:'Операциялар', reports:'Ҳисоботлар', employees:'Ходимлар',
-    payroll:'Ойлик ҳисоблаш', payrollArchive:'Ойлик архиви', categories:'Категориялар',
-    users:'Фойдаланувчилар', chat:'Чат', profile:'Профил', logout:'Чиқиш',
-    welcome:'Хуш келибсиз', refresh:'Янгилаш', save:'Сақлаш', create:'Яратиш',
-    edit:'Таҳрирлаш', delete:'Ўчириш', cancel:'Бекор қилиш', start:'Бошланиш',
-    end:'Тугаш', branch:'Филиал', all:'Умумий', cashBalance:'Нақд баланс',
-    bankBalance:'Ҳисоб рақам баланс', incomeChart:'Киримлар категориялар бўйича',
-    expenseChart:'Чиқимлар категориялар бўйича', branchSales:'Филиаллар бўйича савдо',
-    trend:'Савдо тренди', totalSales:'Жами савдо', growth:'Ўсиш / пасайиш',
-    noData:'Маълумот йўқ', date:'Сана', shift:'Смена', total:'Жами савдо',
-    uzcard:'Uzcard', humo:'Humo', rahmat:'Rahmat', rxmt:'RXMT', uzum:'Uzum', yandex:'Yandex',
-    expense:'Харажат', gum:'Жвачка сони', cashAmount:'Нақд сумма',
-    type:'Тур', account:'Ҳисоб', category:'Категория', amount:'Сумма', note:'Изоҳ',
-    income:'Кирим', outcome:'Чиқим', fullName:'Исм-фамилия', login:'Логин',
-    password:'Парол', role:'Лавозим', access:'Доступ', position:'Лавозим',
-    hireDate:'Ишга кирган сана', salaryType:'Иш ҳақи тури', hourly:'Соатбай',
-    monthly:'Ойлик', hourlyRate:'Соатига', monthlySalary:'Ойлик ставка',
-    workedHours:'Ишлаган соат', extraHours:'Қўшимча соат', tax:'Даромад солиғи',
-    lunch:'Тушлик', penalty:'Жарима', advance:'Аванс', bonus:'Премия',
-    cashPaid:'Нақд берилди', cardPaid:'Пластик берилди', remaining:'Қолдиқ',
-    signature:'Имзо', exportExcel:'Excel юклаб олиш', uploadPhoto:'Расм юклаш',
-    send:'Юбориш', chooseUser:'Фойдаланувчи танланг', actions:'Амал', status:'Статус',
-    expected:'Кутилган', accepted:'Қабул', difference:'Фарқ',
-    categoryNameNeeded:'Категория номи керак', categoryAdded:'Категория қўшилди',
-    categoryUpdated:'Категория янгиланди', categoryDeleted:'Категория ўчирилди',
-    saved:'Сақланди', deleted:'Ўчирилди', chooseBranch:'Филиал танланг',
-    adminOnly:'Фақат админ', loginRequired:'Логин ва парол киритинг',
-    loginError:'Логин ёки парол хато', confirmDelete:'Ростдан ўчирасизми?',
-    userLoginBusy:'Бу логин банд', userNameRequired:'Исм ва логин мажбурий',
-    passwordRequired:'Янги фойдаланувчи учун парол мажбурий',
-    employeeNameRequired:'Ходим исми керак', payrollPeriodRequired:'Ойлик даврини танланг',
-    payrollStartEndError:"Бошланиш санаси тугаш санасидан катта бўлмасин",
-    payrollNoEmployees:"Филиал танланг ёки ходим йўқ",
-    categoryRequired:'Категория ва сумма мажбурий', orderTotalRequired:'Жами савдо мажбурий',
-    alreadyApproved:'Бу инкассация аллақачон тасдиқланган',
-    backupAdminOnly:'Фақат админ бэкап ола олади',
-    importNoRows:'Импорт учун мос қатор топилмади',
-    importOrdersNoRows:'Импорт учун мос ордер топилмади',
-    noSelected:"Танланган қатор йўқ", telegramSaved:'Telegram созламалари сақланди',
-    telegramTest:'Юборилмоқда...', telegramOk:'✅ Тест юборилди!',
-    telegramErr:'❌ Telegram хатоси: ',
+
+  cy: {
+    /* ── Navigation ── */
+    dashboard:'Бошқарув', salesAnalytics:'Савдо таҳлили',
+    order:'Ордер киритиш', orderReports:'Ордер ҳисоботи',
+    operation:'Кирим / Чиқим киритиш',
+    history:'Операциялар тарихи',
+    reports:'Ҳисоботлар', cash:'Инкассация',
+    employees:'Ходимлар', payroll:'Маош', payrollArchive:'Маош архиви',
+    categories:'Тоифалар', branches:'Филиаллар', users:'Фойдаланувчилар',
+    chat:'Чат', profile:'Профил', settings:'Созламалар',
+    logout:'Чиқиш',
+
+    /* ── Actions ── */
+    save:'Сақлаш', cancel:'Бекор', delete:'Ўчириш',
+    edit:'Таҳрирлаш', add:'Қўшиш', create:'Яратиш',
+    search:'Қидириш', filter:'Филтр',
+    export:'Экспорт', exportExcel:'Excel экспорт',
+    import:'Импорт', approve:'Тасдиқлаш',
+    refresh:'Янгилаш', actions:'Амаллар',
+    send:'Юбориш', yes:'Ҳа', no:'Йўқ',
+
+    /* ── Common fields ── */
+    amount:'Сумма', date:'Сана', branch:'Филиал',
+    category:'Тоифа', description:'Изоҳ', note:'Изоҳ',
+    account:'Ҳисоб', type:'Тур', status:'Ҳолати',
+    start:'Бошланиш', end:'Тугаш',
+    fullName:'Тўлиқ исм', role:'Рол', phone:'Телефон', email:'Email',
+    login:'Логин', password:'Парол',
+
+    /* ── Finance ── */
+    income:'Кирим', expense:'Харажат', outcome:'Чиқим',
+    pending:'Кутилмоқда', approved:'Тасдиқланган',
+    total:'Жами', profit:'Фойда', balance:'Баланс',
+    totalIncome:'Жами кирим', totalExpense:'Жами чиқим', totalOrders:'Буюртмалар',
+    cashBalance:'Нақд баланс', bankBalance:'Банк баланс',
+    expected:'Кутилган', accepted:'Қабул қилинган', difference:'Фарқ',
+    expectedAmount:'Кутилган сумма', actualAmount:'Ҳақиқий сумма',
+    all:'Барчаси', allBranches:'Барча филиаллар',
+    allTypes:'Барча турлар', allCategories:'Барча тоифалар',
+    allAccounts:'Барча ҳисоблар',
+
+    /* ── Order form ── */
+    shift:'Смена', uzcard:'Uzcard', humo:'Humo',
+    rahmat:'Rahmat', rxmt:'RXMT', uzum:'Uzum',
+    yandex:'Yandex', gum:'Жвачка',
+    cashAmount:'Нақд сумма', cardAmount:'Пластик',
+    deliveryAmount:'Етказиб бериш', orderCount:'Буюртмалар сони',
+
+    /* ── Analytics ── */
+    totalSales:'Жами савдо', growth:'Ўсиш',
+    trend:'Кунлик тренд', branchSales:'Филиаллар бўйича',
+    incomeChart:'Киримлар', expenseChart:'Чиқимлар',
+
+    /* ── Employees / Payroll ── */
+    position:'Лавозим', salaryType:'Маош тури', salaryRate:'Ставка',
+    hourly:'Соатлик', monthly:'Ойлик', workDays:'Иш кунлари',
+    hireDate:'Ишга қабул санаси',
+    hourlyRate:'Соатлик нарх', monthlySalary:'Ойлик маош',
+    hoursWorked:'Ишлаган соат', workedHours:'Ишлаган соат',
+    extraHours:'Қўшимча соат',
+    bonus:'Бонус', deduction:'Ушлаб қолиш',
+    tax:'Солиқ', lunch:'Тушлик', penalty:'Жарима', advance:'Аванс',
+    cashPaid:'Нақд тўлов', cardPaid:'Пластик тўлов',
+    netAmount:'Соф маош', remaining:'Қолдиқ',
+    period:'Давр', periodStart:'Давр боши', periodEnd:'Давр охири',
+    archivePayroll:'Архивлаш', payNow:'Тўлаш',
+    totalEmployees:'Ходимлар сони',
+
+    /* ── Users ── */
+    active:'Фаол', inactive:'Фаол эмас', deactivate:'Блоклаш',
+    access:'Кириш ҳуқуқлари', modules:'Модуллар',
+    sum:'сўм', hr:'соат', days:'кун',
+    online:'Онлайн', offline:'Офлайн',
+
+    /* ── Profile ── */
+    uploadAvatar:'Расм юклаш', uploadPhoto:'📷 Расм юклаш',
+    changePassword:'Паролни ўзгартириш',
+    oldPass:'Эски парол', newPass:'Янги парол',
+    companyName:'Компания номи', address:'Манзил',
+    botToken:'Bot token', chatId:'Chat ID',
+    testTelegram:'Тест юбориш',
+    tgConnected:'Telegram уланган', tgNotConnected:'Telegram уланмаган',
+
+    /* ── Login ── */
+    rememberMe:'Эслаб қолиш', loginBtn:'Тизимга кириш',
+    loading:'Юкланмоқда...', noData:'Маълумот йўқ',
+    confirmDelete:'Ўчиришни тасдиқлайсизми?',
+
+    /* ── Notifications ── */
+    saveOk:'Сақланди!', deleteOk:'Ўчирилди!',
+    err:'Хатолик!', approveOk:'Тасдиқланди!',
+
+    /* ── Chat ── */
+    typeMsg:'Хабар ёзинг...',
+    noMessages:'Хабарлар йўқ', selectUser:'Фойдаланувчини танланг',
+
+    /* ── Validation messages ── */
+    welcome:'Хуш келибсиз',
+    chooseBranch:'Аввал филиал танланг',
+    categoryRequired:'Тоифа ва сумма киритилиши шарт',
+    loginRequired:'Логин ва парол киритинг',
+    loginError:'Логин ёки парол хато',
+    payrollPeriodRequired:'Давр боши ва охири киритилиши шарт',
+    payrollStartEndError:'Давр боши охиридан катта бўлмасин',
+    payrollNoEmployees:'Ходимлар йўқ — аввал филиал танланг',
+    adminOnly:'Фақат админ учун рухсат бор',
+    noSelected:'Аввал қаторларни танланг',
+    employeeNameRequired:'Ходим исми киритилиши шарт',
+    userNameRequired:'Исм ва логин киритилиши шарт',
+    passwordRequired:'Парол киритилиши шарт',
+    userLoginBusy:'Бу логин аллақачон банд',
+    categoryNameNeeded:'Тоифа номи киритилиши шарт',
+    categoryUpdated:'Тоифа янгиланди',
+    categoryAdded:'Тоифа қўшилди',
+    categoryDeleted:'Тоифа ўчирилди',
+    importNoRows:'Импорт учун мос қаторлар топилмади',
+    importOrdersNoRows:'Импорт учун мос ордерлар топилмади',
+    orderTotalRequired:'Жами сумма киритилиши шарт',
+    telegramSaved:'Telegram созламалари сақланди',
+    telegramTest:'Тест хабар юборилмоқда...',
+    telegramOk:'Тест хабар муваффақиятли юборилди ✅',
+    telegramErr:'Telegram хатоси: ',
+    backupAdminOnly:'Backup фақат админ учун',
+    alreadyApproved:'Аллақачон тасдиқланган',
   }
 }

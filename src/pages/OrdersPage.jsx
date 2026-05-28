@@ -1,6 +1,6 @@
 import { useMemo, Fragment } from 'react'
 import Panel from '../components/ui/Panel'
-import { money, num, localDateValue, cashDifferenceText, calcOrderExpected } from '../utils'
+import { money, num, cashDifferenceText, calcOrderExpected } from '../utils'
 
 export default function OrdersPage({ tr, rows, isAdmin, edit, del, exportCSV, importCSV, downloadTemplate, printPDF }) {
   const grouped = useMemo(() => {

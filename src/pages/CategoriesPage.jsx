@@ -40,7 +40,7 @@ export default function CategoriesPage({ tr, categories, newCat, setNewCat, save
               <tr key={c.id} className={editCat?.id === c.id ? 'selectedRow' : ''}>
                 <td><input type="checkbox" checked={selectedIds.includes(c.id)} onChange={() => setSelectedIds(prev => prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id])} /></td>
                 <td>{i + 1}</td><td>{c.name}</td><td>{c.name_ru || '—'}</td>
-                <td><span className={`typeBadge ${c.type === OP_TYPE.INCOME ? 'income' : 'expense'}`}>{c.type === OP_TYPE.INCOME ? tr.income : tr.outcome}</span></td>
+                <td><span className={`typeBadge ${c.type === OP_TYPE.INCOME ? 'income' : 'outcome'}`}>{c.type === OP_TYPE.INCOME ? tr.income : tr.outcome}</span></td>
                 <td>
                   <button onClick={() => startEdit(c)}>✏️</button>
                   <button onClick={() => del(c)}>🗑</button>

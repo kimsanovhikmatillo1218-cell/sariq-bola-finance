@@ -30,7 +30,7 @@ export default function ChatPage({ tr, users, messages, me, chatUser, setChatUse
             onClick={() => { setChatUser(u.id); markChatRead(u.id) }}>
             <div className="chatUserAvatar">
               <img src={avatarSrc(u)} alt="" />
-              <span className={isOnline(u) ? 'onlineDot' : 'offlineDot'} />
+              <span className={isOnline(u) ? 'onlineDot online' : 'onlineDot'} />
             </div>
             <div className="chatUserInfo">
               <b>{u.full_name || u.login}</b>
@@ -46,7 +46,7 @@ export default function ChatPage({ tr, users, messages, me, chatUser, setChatUse
           <>
             <div className="chatMessages">
               {withDateDividers(chatMessages).map((item, i) => {
-                if (item.type === 'date') return <div key={`d-${i}`} className="chatDateDivider">{item.date}</div>
+                if (item.type === 'date') return <div key={`d-${i}`} className="chatDateDivider"><span>{item.date}</span></div>
                 const mine = item.sender_id === me?.id
                 return (
                   <div key={item.id} className={`chatBubble ${mine ? 'mine' : 'theirs'}`}>

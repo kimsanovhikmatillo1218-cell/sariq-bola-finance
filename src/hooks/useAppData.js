@@ -2,15 +2,15 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib'
 import {
-  BRANCH_ORDER, ACCOUNTS, MODULES, ROLE_MODULES, TEXT, OP_TYPE, CASH_ST,
-  TG_FN, SIGN_IN_RPC, PERIOD_PAGES
+  BRANCH_ORDER, ROLE_MODULES, TEXT, OP_TYPE, CASH_ST,
+  SIGN_IN_RPC
 } from '../constants'
 import {
-  today, money, num, safeJsonParse, isOnline, localDateValue, inDateRange,
-  sameDay, calcOrderExpected, serverHashPassword, sortRows, toggle,
-  normalizeHeader, findColumn, readCell, toNumber, toDateTime, toDateOnly,
+  today, num, safeJsonParse, isOnline, localDateValue, inDateRange,
+  sameDay, calcOrderExpected, serverHashPassword, sortRows,
+  findColumn, readCell, toNumber, toDateTime, toDateOnly,
   makeCSVRowsFromObjects, downloadCSV, downloadXLSX, parseCSV,
-  exportOperations, exportOrders, avatarSrc
+  exportOperations, exportOrders
 } from '../utils'
 
 export default function useAppData() {
@@ -35,6 +35,7 @@ export default function useAppData() {
 
   // ── Data state ───────────────────────────────────────────────────────────
   const [branches, setBranches]       = useState([])
+  const [allBranches, setAllBranches] = useState([])
   const [users, setUsers]             = useState([])
   const [userBranches, setUserBranches] = useState([])
   const [permissions, setPermissions] = useState([])
@@ -182,18 +183,23 @@ export default function useAppData() {
   }), [visibleOps, reportFilter])
 
   const stats = useMemo(() => {
+    // Naqd/Bank BALANS — tanlangan filial bo'yicha barcha vaqt uchun (period filtr yo'q)
+    // Bu to'g'ri hisob-kitob: bank hisob raqami kabi umumiy qoldiq ko'rsatiladi
     let cash = 0, bank = 0
-    const income = {}, expense = {}
-    visibleOps.forEach(x => {
+    operations.filter(x => selectedBranchIds.includes(x.branch_id)).forEach(x => {
       const amount = num(x.amount), sign = x.type === OP_TYPE.INCOME ? 1 : -1
       if (x.account === 'Naqd')        cash += amount * sign
       if (x.account === 'Hisob raqam') bank += amount * sign
+    })
+    // Kirim/Chiqim diagrammalari — tanlangan davr uchun (period filtr bor)
+    const income = {}, expense = {}
+    visibleOps.forEach(x => {
       const name = catName(x.categories) || 'Boshqa'
-      if (x.type === OP_TYPE.INCOME)  income[name]  = (income[name]  || 0) + amount
-      if (x.type === OP_TYPE.EXPENSE) expense[name] = (expense[name] || 0) + amount
+      if (x.type === OP_TYPE.INCOME)  income[name]  = (income[name]  || 0) + num(x.amount)
+      if (x.type === OP_TYPE.EXPENSE) expense[name] = (expense[name] || 0) + num(x.amount)
     })
     return { cash, bank, incomeRows: sortRows(income), expenseRows: sortRows(expense) }
-  }, [visibleOps, catName])
+  }, [operations, selectedBranchIds, visibleOps, catName])
 
   const salesStats = useMemo(() => {
     const byDay = {}, byBranch = {}; let total = 0
@@ -244,14 +250,15 @@ export default function useAppData() {
 
   // ── Load functions ───────────────────────────────────────────────────────
   const loadBase = useCallback(async () => {
-    const [b, c, comp] = await Promise.all([
+    const [b, bAll, c, comp] = await Promise.all([
       supabase.from('branches').select('*').eq('active', true),
+      supabase.from('branches').select('*').order('sort_order'),
       supabase.from('categories').select('*').eq('active', true).order('name'),
-      supabase.from('company_settings').select('id,telegram_chat_id,created_at').order('created_at', { ascending: true }).limit(1).maybeSingle()
+      supabase.from('company_settings').select('id,telegram_token,telegram_chat_id,created_at').order('created_at', { ascending: true }).limit(1).maybeSingle()
     ])
     const sorted = (b.data || []).sort((x, y) => BRANCH_ORDER.indexOf(x.code) - BRANCH_ORDER.indexOf(y.code))
     const clean  = (c.data || []).filter(x => !String(x.name || '').toLowerCase().includes('click'))
-    setBranches(sorted); setCategories(clean); setCompany(comp.data || null)
+    setBranches(sorted); setAllBranches(bAll.data || []); setCategories(clean); setCompany(comp.data || null)
     const saved = localStorage.getItem('finance_branch')
     if (!saved || saved === 'ALL') { setBranchState('ALL'); return }
     const found = sorted.find(x => x.id === saved) || sorted.find(x => x.code === saved)
@@ -364,6 +371,8 @@ export default function useAppData() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, loadUsersAndAccess)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_branches' }, loadUsersAndAccess)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'permissions' }, loadUsersAndAccess)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'branches' }, loadBase)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadBase)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'operations' }, loadOperations)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'shift_orders' }, loadOrders)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cash_collection' }, loadCashRows)
@@ -413,13 +422,27 @@ export default function useAppData() {
   const ensureCategory = useCallback(async (name, type) => {
     const clean = String(name || '').trim()
     if (!clean) return null
-    const found = categories.find(c =>
+    // 1. Lokal state dan qidirish (tez yo'l)
+    const localFound = categories.find(c =>
       c.type === type &&
       [c.name, c.name_ru, c.name_cy].filter(Boolean).some(v => v.trim().toLowerCase() === clean.toLowerCase())
     )
-    if (found) return found.id
-    const { data, error } = await supabase.from('categories').insert({ name: clean, name_ru: clean, name_cy: clean, type, active: true }).select().single()
-    if (error) throw error
+    if (localFound) return localFound.id
+    // 2. DB dan to'g'ridan-to'g'ri qidirish (lokal stateda bo'lmasligi mumkin)
+    const { data: dbFound } = await supabase.from('categories')
+      .select('id').eq('type', type).ilike('name', clean).limit(1).maybeSingle()
+    if (dbFound?.id) return dbFound.id
+    // 3. Yangi kategoriya yaratish
+    const { data, error } = await supabase.from('categories')
+      .insert({ name: clean, name_ru: clean, name_cy: clean, type, active: true })
+      .select('id').single()
+    if (error) {
+      // Unique constraint xatosi bo'lsa — qayta qidirish
+      const { data: retry } = await supabase.from('categories')
+        .select('id').eq('type', type).ilike('name', clean).limit(1).maybeSingle()
+      if (retry?.id) return retry.id
+      throw error
+    }
     return data.id
   }, [categories])
 
@@ -446,7 +469,15 @@ export default function useAppData() {
 
   const logout = useCallback(() => {
     localStorage.removeItem('finance_user')
+    localStorage.removeItem('finance_page')
     setUser(null); setPassword('')
+    // Barcha data state ni tozalash — boshqa foydalanuvchi kirsa eski ma'lumot ko'rinmasin
+    setBranches([]); setAllBranches([]); setUsers([]); setUserBranches([])
+    setPermissions([]); setCategories([]); setOperations([]); setOrders([])
+    setCashRows([]); setMessages([]); setEmployees([]); setPayrollRuns([])
+    setPayrollItems([]); setCompany(null)
+    setSelectedOperationIds([]); setSelectedCategoryIds([])
+    setPage('dashboard')
   }, [])
 
   // ── CRUD: Operations ──────────────────────────────────────────────────────
@@ -458,16 +489,16 @@ export default function useAppData() {
       category_id: op.category_id, amount: num(op.amount), note: op.note,
       created_by: user.id,
       created_at: isAdmin ? `${op.date}T00:00:00` : new Date().toISOString(),
-      status: 'ACTIVE'
+      status: 'active'
     }
     const res = editOp
-      ? await supabase.from('operations').update({ ...row, edited_by: user.id, edited_at: new Date().toISOString() }).eq('id', editOp.id).select().single()
+      ? await supabase.from('operations').update(row).eq('id', editOp.id).select().single()
       : await supabase.from('operations').insert(row).select().single()
     if (res.error) return notify(res.error.message)
     await audit('operations', res.data.id, editOp ? 'UPDATE' : 'INSERT', editOp, row)
     setEditOp(null)
     setOp({ date: today(), type: OP_TYPE.INCOME, account: 'Naqd', category_id: '', amount: '', note: '' })
-    await loadOperations(); notify(tr.saved)
+    await loadOperations(); notify(tr.saveOk)
   }, [branch, op, editOp, isAdmin, user, tr, audit, loadOperations, notify])
 
   const deleteRow = useCallback((table, row) => {
@@ -479,7 +510,7 @@ export default function useAppData() {
       if (table === 'operations') await loadOperations()
       else if (table === 'shift_orders') await loadOrders()
       else if (table === 'cash_collection') await loadCashRows()
-      notify(tr.deleted)
+      notify(tr.deleteOk)
     })
   }, [isAdmin, tr, showConfirm, audit, loadOperations, loadOrders, loadCashRows, notify])
 
@@ -507,6 +538,77 @@ export default function useAppData() {
     })
   }, [isAdmin, tr, showConfirm, loadBase, notify])
 
+  // Edge function o'rniga to'g'ridan-to'g'ri Telegram Bot API ga murojaat
+  // payload.telegram_token / telegram_chat_id berilsa ularni ishlatadi (stale closure muammosidan himoya)
+  const sendTelegramViaEdge = useCallback(async payload => {
+    const token  = String(payload.telegram_token  || company?.telegram_token  || '').trim()
+    const chatId = String(payload.telegram_chat_id || company?.telegram_chat_id || '').trim()
+    if (!token)  throw new Error('Bot Token kiritilmagan. Avval Profil → Telegram sozlamalarini saqlang.')
+    if (!chatId) throw new Error('Chat ID kiritilmagan. Avval Profil → Telegram sozlamalarini saqlang.')
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: payload.text })
+    })
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}))
+      throw new Error(errBody.description || `HTTP xato: ${res.status}`)
+    }
+    const data = await res.json()
+    if (!data.ok) throw new Error(data.description || 'Telegram yuborilmadi')
+    return data
+  }, [company?.telegram_token, company?.telegram_chat_id])
+
+  const sendTelegramReport = useCallback(async (branchId, orderDate) => {
+    try {
+      const [s1res, s2res, usersRes, branchRes] = await Promise.all([
+        supabase.from('shift_orders').select('*,branches(name)').eq('branch_id', branchId).eq('order_date', orderDate).eq('shift_no', 1).order('created_at', { ascending: false }).limit(1),
+        supabase.from('shift_orders').select('*,branches(name)').eq('branch_id', branchId).eq('order_date', orderDate).eq('shift_no', 2).order('created_at', { ascending: false }).limit(1),
+        supabase.from('users').select('id,full_name'),
+        supabase.from('branches').select('name').eq('id', branchId).limit(1)
+      ])
+      const s1 = s1res.data?.[0], s2 = s2res.data?.[0]
+      const allUsers = usersRes.data || []
+      const branchName = branchRes.data?.[0]?.name || s2?.branches?.name || s1?.branches?.name || "Noma'lum"
+      const dateStr = orderDate.split('-').reverse().join('.')
+      const fmt = n => Number(n || 0).toLocaleString('ru-RU')
+      const fmtShift = (r, label) => {
+        if (!r) return [`🔹 ${label}`, '💰 Итого: 0', '💵 Наличка: 0'].join('\n')
+        const expected = calcOrderExpected(r), cash = num(r.cash_amount), diff = cash - expected
+        const sign = diff > 0 ? '+' : ''
+        const mgr = allUsers.find(u => u.id === r.created_by)?.full_name || '—'
+        return [
+          `🔹 ${label}`, `💰 Итого: ${fmt(r.total)}`, `💵 Наличка: ${fmt(r.cash_amount)}`,
+          `💳 Uzcard: ${fmt(r.uzcard)}`, `💳 Humo: ${fmt(r.humo)}`,
+          `🎁 Rahmat: ${fmt(r.rahmat)}`, `🎁 RXMT: ${fmt(r.rxmt)}`,
+          `🛍 Uzum: ${fmt(r.uzum)}`, `🚕 Yandex: ${fmt(r.yandex)}`,
+          `➖ Расход: ${fmt(r.expense)}`, `🍬 Жвачка: ${num(r.gum_count)}`,
+          `⚖️ Излишка/Недостача: ${sign}${diff.toLocaleString('ru-RU')}`, `👤 Менеджер: ${mgr}`
+        ].join('\n')
+      }
+      const T = (a, b) => num(a) + num(b)
+      const jTotal = T(s1?.total, s2?.total), jCash = T(s1?.cash_amount, s2?.cash_amount)
+      const jUzcard = T(s1?.uzcard, s2?.uzcard), jHumo = T(s1?.humo, s2?.humo)
+      const jRahmat = T(s1?.rahmat, s2?.rahmat), jRxmt = T(s1?.rxmt, s2?.rxmt)
+      const jUzum = T(s1?.uzum, s2?.uzum), jYandex = T(s1?.yandex, s2?.yandex)
+      const jExp = T(s1?.expense, s2?.expense), jGum = T(s1?.gum_count, s2?.gum_count)
+      const jExpected = calcOrderExpected({ total: jTotal, uzcard: jUzcard, humo: jHumo, rahmat: jRahmat, rxmt: jRxmt, uzum: jUzum, yandex: jYandex, expense: jExp, gum_count: jGum })
+      const jDiff = jCash - jExpected, jSign = jDiff > 0 ? '+' : ''
+      const text = [
+        `🏪 Филиал: ${branchName}`, `📅 Дата: ${dateStr}`, '',
+        fmtShift(s1, '1 СМЕНА'), '', fmtShift(s2, '2 СМЕНА'), '',
+        '🔹 ИТОГ ЗА ДЕНЬ',
+        `💰 Итого: ${fmt(jTotal)}`, `💵 Наличка: ${fmt(jCash)}`,
+        `💳 Uzcard: ${fmt(jUzcard)}`, `💳 Humo: ${fmt(jHumo)}`,
+        `🎁 Rahmat: ${fmt(jRahmat)}`, `🎁 RXMT: ${fmt(jRxmt)}`,
+        `🛍 Uzum: ${fmt(jUzum)}`, `🚕 Yandex: ${fmt(jYandex)}`,
+        `➖ Расход: ${fmt(jExp)}`, `🍬 Жвачка: ${jGum}`,
+        `⚖️ Излишка/Недостача: ${jSign}${jDiff.toLocaleString('ru-RU')}`
+      ].join('\n')
+      await sendTelegramViaEdge({ type: 'report', text })
+    } catch (e) { console.error('Telegram xatosi:', e) }
+  }, [sendTelegramViaEdge])
+
   // ── CRUD: Orders ──────────────────────────────────────────────────────────
   const saveOrder = useCallback(async () => {
     if (branch === 'ALL') return notify(tr.chooseBranch)
@@ -524,7 +626,7 @@ export default function useAppData() {
       note: order.note, status: 'CLOSED', created_by: user.id
     }
     const res = editOrder
-      ? await supabase.from('shift_orders').update({ ...row, edited_by: user.id, edited_at: new Date().toISOString() }).eq('id', editOrder.id).select().single()
+      ? await supabase.from('shift_orders').update(row).eq('id', editOrder.id).select().single()
       : await supabase.from('shift_orders').insert(row).select().single()
     if (res.error) return notify('Order xato: ' + res.error.message)
     await audit('shift_orders', res.data.id, editOrder ? 'UPDATE' : 'INSERT', editOrder, row)
@@ -551,31 +653,46 @@ export default function useAppData() {
     setEditOrder(null)
     setOrder({ date: today(), shift_no: '1', total: '', uzcard: '', humo: '', rahmat: '', rxmt: '', uzum: '', yandex: '', expense: '', gum_count: '', cash_amount: '', note: '' })
     await Promise.all([loadOrders(), loadCashRows()])
-  }, [branch, order, editOrder, isAdmin, user, tr, audit, loadOrders, loadCashRows, notify])
+  }, [branch, order, editOrder, isAdmin, user, tr, audit, loadOrders, loadCashRows, notify, sendTelegramReport])
 
   // ── CRUD: Cash ────────────────────────────────────────────────────────────
   const approveCash = useCallback(async (row, acceptedValue) => {
     if (row.status === CASH_ST.APPROVED) return notify(tr.alreadyApproved)
     const accepted = acceptedValue ?? row.expected_cash
     if (String(accepted || '').trim() === '') return
-    const diff = num(accepted) - num(row.expected_cash)
     const { error } = await supabase.from('cash_collection').update({
-      accepted_cash: num(accepted), difference: diff, status: CASH_ST.APPROVED,
+      accepted_cash: num(accepted), status: CASH_ST.APPROVED,
       approved_by: user.id, approved_at: new Date().toISOString()
     }).eq('id', row.id)
     if (error) return notify(error.message)
-    const noteText = `Inkassatsiya qabul: ${row.order_date}`
-    const { data: existOp } = await supabase.from('operations').select('id')
-      .eq('branch_id', row.branch_id).eq('note', noteText).limit(1)
-    if (!existOp?.length) {
-      const savdoCatId = await ensureCategory('Savdo puli', OP_TYPE.INCOME)
-      await supabase.from('operations').insert({
-        branch_id: row.branch_id, type: OP_TYPE.INCOME, account: 'Naqd',
-        category_id: savdoCatId, amount: num(accepted),
-        note: noteText, created_by: user.id, created_at: new Date().toISOString(), status: 'ACTIVE'
-      })
+
+    // Inkassatsiya qabul qilinganda savdodan tushgan naqd pul balansga qo'shiladi
+    // noteText da row.id ishlatiladi — eski o'chirilgan operatsiyalar bilan aralashmasin
+    // created_at = order_date (Dashboard period filter bilan mos bo'lsin)
+    try {
+      const noteText = `Inkassatsiya qabul: ${row.order_date} [${row.id}]`
+      const { data: existOp } = await supabase.from('operations').select('id')
+        .eq('branch_id', row.branch_id).eq('note', noteText).limit(1)
+      if (!existOp?.length) {
+        const savdoCatId = await ensureCategory('Savdo puli', OP_TYPE.INCOME)
+        if (savdoCatId) {
+          const { error: opErr } = await supabase.from('operations').insert({
+            branch_id: row.branch_id, type: OP_TYPE.INCOME, account: 'Naqd',
+            category_id: savdoCatId, amount: num(accepted),
+            note: noteText, created_by: user.id,
+            created_at: `${row.order_date}T12:00:00`,
+            status: 'active'
+          })
+          if (opErr) notify('Balansga qo\'shishda xato: ' + opErr.message)
+        } else {
+          notify('Kategoriya topilmadi — balansga qo\'shilmadi')
+        }
+      }
+    } catch (opErr) {
+      console.error('Inkassatsiya operatsiya yaratishda xato:', opErr)
+      notify('Balansga qo\'shishda xato: ' + (opErr.message || 'Noma\'lum'))
     }
-    await Promise.all([loadCashRows(), loadOperations()]); notify('Tasdiqlandi ✅')
+    await Promise.all([loadCashRows(), loadOperations()]); notify(tr.approveOk)
   }, [tr, user, ensureCategory, loadCashRows, loadOperations, notify])
 
   const saveCashEdit = useCallback(async (row, form) => {
@@ -583,7 +700,7 @@ export default function useAppData() {
       .update({ expected_cash: num(form.expected_cash), note: form.note }).eq('id', row.id)
     if (error) return notify(error.message)
     await audit('cash_collection', row.id, 'UPDATE', row, form)
-    setEditCashRow(null); await loadCashRows(); notify(tr.saved)
+    setEditCashRow(null); await loadCashRows(); notify(tr.saveOk)
   }, [audit, loadCashRows, tr, notify])
 
   const deleteCashRow = useCallback(row => {
@@ -592,7 +709,7 @@ export default function useAppData() {
       const { error } = await supabase.from('cash_collection').delete().eq('id', row.id)
       if (error) return notify(error.message)
       await audit('cash_collection', row.id, 'DELETE', row, null)
-      await loadCashRows(); notify(tr.deleted)
+      await loadCashRows(); notify(tr.deleteOk)
     })
   }, [isAdmin, tr, showConfirm, audit, loadCashRows, notify])
 
@@ -681,6 +798,54 @@ export default function useAppData() {
   const cancelEditCategory = useCallback(() => {
     setEditCat(null); setNewCat({ name: '', name_ru: '', name_cy: '', type: OP_TYPE.INCOME })
   }, [])
+
+  // ── CRUD: Branches ────────────────────────────────────────────────────────
+  const saveBranch = useCallback(async (form, editId, onSuccess) => {
+    if (!isAdmin) return notify(tr.adminOnly)
+    const name = String(form.name || '').trim()
+    const code = String(form.code || '').trim().toUpperCase()
+    if (!name) return notify('Filial nomini kiriting')
+    if (!code) return notify('Filial kodini kiriting')
+    const payload = { name, code, sort_order: Number(form.sort_order) || 0 }
+    if (editId) {
+      const { error } = await supabase.from('branches').update(payload).eq('id', editId)
+      if (error) return notify(error.message)
+      await audit('branches', editId, 'UPDATE', null, payload)
+      notify('Filial yangilandi')
+    } else {
+      const dup = (await supabase.from('branches').select('id').eq('code', code).limit(1)).data
+      if (dup?.length) return notify('Bu kodli filial allaqachon mavjud')
+      const { data, error } = await supabase.from('branches').insert({ ...payload, active: true }).select().single()
+      if (error) return notify(error.message)
+      await audit('branches', data.id, 'INSERT', null, payload)
+      notify('Filial qo\'shildi')
+    }
+    await loadBase()
+    onSuccess?.()
+  }, [isAdmin, tr, audit, loadBase, notify])
+
+  const toggleBranch = useCallback(b => {
+    if (!isAdmin) return notify(tr.adminOnly)
+    const msg = b.active ? `"${b.name}" ni nofaol qilasizmi?` : `"${b.name}" ni faollashtirасizmi?`
+    showConfirm(msg, async () => {
+      const { error } = await supabase.from('branches').update({ active: !b.active }).eq('id', b.id)
+      if (error) return notify(error.message)
+      await audit('branches', b.id, 'UPDATE', { active: b.active }, { active: !b.active })
+      await loadBase()
+      notify(b.active ? 'Filial nofaol qilindi' : 'Filial faollashtirildi')
+    })
+  }, [isAdmin, tr, showConfirm, audit, loadBase, notify])
+
+  const deleteBranch = useCallback(b => {
+    if (!isAdmin) return notify(tr.adminOnly)
+    showConfirm(`"${b.name}" filialini to'liq o'chirasizmi? Bu amalni qaytarib bo'lmaydi!`, async () => {
+      const { error } = await supabase.from('branches').delete().eq('id', b.id)
+      if (error) return notify("O'chirib bo'lmadi: " + error.message)
+      await audit('branches', b.id, 'DELETE', b, null)
+      await loadBase()
+      notify('Filial o\'chirildi')
+    })
+  }, [isAdmin, tr, showConfirm, audit, loadBase, notify])
 
   // ── CRUD: Employees ───────────────────────────────────────────────────────
   const saveEmployee = useCallback(async () => {
@@ -807,14 +972,14 @@ export default function useAppData() {
     await loadMessages()
   }, [user?.id, loadMessages])
 
-  // ── Telegram ──────────────────────────────────────────────────────────────
-  const sendTelegramViaEdge = useCallback(async payload => {
-    const { data, error } = await supabase.functions.invoke(TG_FN, { body: payload })
-    if (error) throw error
-    if (data?.ok === false) throw new Error(data.description || 'Telegram yuborilmadi')
-    return data
-  }, [])
+  const markAllRead = useCallback(async () => {
+    if (!user?.id) return
+    await supabase.from('messages').update({ is_read: true })
+      .eq('receiver_id', user.id).eq('is_read', false)
+    await loadMessages()
+  }, [user?.id, loadMessages])
 
+  // ── Telegram ──────────────────────────────────────────────────────────────
   const saveCompanySettings = useCallback(async form => {
     const payload = {
       telegram_token:   String(form.telegram_token || '').trim(),
@@ -827,17 +992,30 @@ export default function useAppData() {
       ? await supabase.from('company_settings').update(payload).eq('id', existing.id).select().single()
       : await supabase.from('company_settings').insert(payload).select().single()
     if (res.error) return notify(res.error.message)
-    setCompany({ id: res.data?.id, telegram_chat_id: payload.telegram_chat_id })
-    await loadBase(); notify(tr.telegramSaved)
-  }, [tr, loadBase, notify])
+    // loadBase() ni chaqirmayamiz — u company ni null ga o'zgartirishi mumkin (race condition)
+    setCompany(prev => ({
+      ...(prev || {}),
+      id: res.data?.id ?? existing?.id ?? prev?.id,
+      telegram_token:   payload.telegram_token,
+      telegram_chat_id: payload.telegram_chat_id
+    }))
+    notify(tr.telegramSaved)
+  }, [tr, notify])
 
   const testTelegram = useCallback(async form => {
     notify(tr.telegramTest)
     try {
-      const token  = String(form?.telegram_token || '').trim()
+      const token  = String(form?.telegram_token  || '').trim()
       const chatId = String(form?.telegram_chat_id || company?.telegram_chat_id || '').trim()
-      if (token || chatId) await saveCompanySettings({ telegram_token: token, telegram_chat_id: chatId })
-      await sendTelegramViaEdge({ type: 'test', text: '✅ Sariq Bola Finance — bot ulanishi tekshirildi!' })
+      // Yangi token kiritilgan bo'lsa — avval saqlaymiz
+      if (token && chatId) await saveCompanySettings({ telegram_token: token, telegram_chat_id: chatId })
+      // Token va chatId ni payload ga o'tkazamiz (saveCompanySettings stale closure muammosidan himoya)
+      await sendTelegramViaEdge({
+        type: 'test',
+        text: '✅ Sariq Bola Finance — bot ulanishi tekshirildi!',
+        telegram_token:   token  || company?.telegram_token,
+        telegram_chat_id: chatId || company?.telegram_chat_id
+      })
       notify(tr.telegramOk)
     } catch (e) { notify(tr.telegramErr + (e.message || "Noma'lum")) }
   }, [tr, company, saveCompanySettings, sendTelegramViaEdge, notify])
@@ -850,60 +1028,12 @@ export default function useAppData() {
       const { error } = await supabase.from('company_settings')
         .update({ telegram_token: '', telegram_chat_id: '' }).eq('id', existing.id)
       if (error) return notify(error.message)
-      setCompany(prev => prev ? { ...prev, telegram_chat_id: '' } : null)
-      await loadBase(); notify("Telegram sozlamalari o'chirildi")
+      setCompany(prev => prev ? { ...prev, telegram_token: '', telegram_chat_id: '' } : null)
+      notify("Telegram sozlamalari o'chirildi")
     })
-  }, [showConfirm, loadBase, notify])
+  }, [showConfirm, notify])
 
-  const sendTelegramReport = useCallback(async (branchId, orderDate) => {
-    try {
-      const [s1res, s2res, usersRes, branchRes] = await Promise.all([
-        supabase.from('shift_orders').select('*,branches(name)').eq('branch_id', branchId).eq('order_date', orderDate).eq('shift_no', 1).order('created_at', { ascending: false }).limit(1),
-        supabase.from('shift_orders').select('*,branches(name)').eq('branch_id', branchId).eq('order_date', orderDate).eq('shift_no', 2).order('created_at', { ascending: false }).limit(1),
-        supabase.from('users').select('id,full_name'),
-        supabase.from('branches').select('name').eq('id', branchId).limit(1)
-      ])
-      const s1 = s1res.data?.[0], s2 = s2res.data?.[0]
-      const allUsers = usersRes.data || []
-      const branchName = branchRes.data?.[0]?.name || s2?.branches?.name || s1?.branches?.name || "Noma'lum"
-      const dateStr = orderDate.split('-').reverse().join('.')
-      const fmt = n => Number(n || 0).toLocaleString('ru-RU')
-      function fmtShift(r, label) {
-        if (!r) return [`🔹 ${label}`, '💰 Итого: 0', '💵 Наличка: 0'].join('\n')
-        const expected = calcOrderExpected(r), cash = num(r.cash_amount), diff = cash - expected
-        const sign = diff > 0 ? '+' : ''
-        const mgr = allUsers.find(u => u.id === r.created_by)?.full_name || '—'
-        return [
-          `🔹 ${label}`, `💰 Итого: ${fmt(r.total)}`, `💵 Наличка: ${fmt(r.cash_amount)}`,
-          `💳 Uzcard: ${fmt(r.uzcard)}`, `💳 Humo: ${fmt(r.humo)}`,
-          `🎁 Rahmat: ${fmt(r.rahmat)}`, `🎁 RXMT: ${fmt(r.rxmt)}`,
-          `🛍 Uzum: ${fmt(r.uzum)}`, `🚕 Yandex: ${fmt(r.yandex)}`,
-          `➖ Расход: ${fmt(r.expense)}`, `🍬 Жвачка: ${num(r.gum_count)}`,
-          `⚖️ Излишка/Недостача: ${sign}${diff.toLocaleString('ru-RU')}`, `👤 Менеджер: ${mgr}`
-        ].join('\n')
-      }
-      const T = (a, b) => num(a) + num(b)
-      const jTotal = T(s1?.total, s2?.total), jCash = T(s1?.cash_amount, s2?.cash_amount)
-      const jUzcard = T(s1?.uzcard, s2?.uzcard), jHumo = T(s1?.humo, s2?.humo)
-      const jRahmat = T(s1?.rahmat, s2?.rahmat), jRxmt = T(s1?.rxmt, s2?.rxmt)
-      const jUzum = T(s1?.uzum, s2?.uzum), jYandex = T(s1?.yandex, s2?.yandex)
-      const jExp = T(s1?.expense, s2?.expense), jGum = T(s1?.gum_count, s2?.gum_count)
-      const jExpected = calcOrderExpected({ total: jTotal, uzcard: jUzcard, humo: jHumo, rahmat: jRahmat, rxmt: jRxmt, uzum: jUzum, yandex: jYandex, expense: jExp, gum_count: jGum })
-      const jDiff = jCash - jExpected, jSign = jDiff > 0 ? '+' : ''
-      const text = [
-        `🏪 Филиал: ${branchName}`, `📅 Дата: ${dateStr}`, '',
-        fmtShift(s1, '1 СМЕНА'), '', fmtShift(s2, '2 СМЕНА'), '',
-        '🔹 ИТОГ ЗА ДЕНЬ',
-        `💰 Итого: ${fmt(jTotal)}`, `💵 Наличка: ${fmt(jCash)}`,
-        `💳 Uzcard: ${fmt(jUzcard)}`, `💳 Humo: ${fmt(jHumo)}`,
-        `🎁 Rahmat: ${fmt(jRahmat)}`, `🎁 RXMT: ${fmt(jRxmt)}`,
-        `🛍 Uzum: ${fmt(jUzum)}`, `🚕 Yandex: ${fmt(jYandex)}`,
-        `➖ Расход: ${fmt(jExp)}`, `🍬 Жвачка: ${jGum}`,
-        `⚖️ Излишка/Недостача: ${jSign}${jDiff.toLocaleString('ru-RU')}`
-      ].join('\n')
-      await sendTelegramViaEdge({ type: 'report', text })
-    } catch (e) { console.error('Telegram xatosi:', e) }
-  }, [sendTelegramViaEdge])
+
 
   // ── Import / Export ───────────────────────────────────────────────────────
   const exportAllData = useCallback(async () => {
@@ -992,38 +1122,65 @@ export default function useAppData() {
       const header = parsed[0] || [], rows = parsed.slice(1)
       const col = {
         branch:  findColumn(header, ['filial','branch','филиал']),
+        smena:   findColumn(header, ['smena','shift','смена']),
         date:    findColumn(header, ['sana','date','дата']),
-        shift:   findColumn(header, ['smena','shift','смена']),
-        total:   findColumn(header, ['jami savdo','jami','total','общая продажа']),
+        total:   findColumn(header, ['jami savdo','jami','total','общая продажа','jami_savdo','итого']),
         uzcard:  findColumn(header, ['uzcard']), humo: findColumn(header, ['humo']),
         rahmat:  findColumn(header, ['rahmat']), rxmt: findColumn(header, ['rxmt']),
         uzum:    findColumn(header, ['uzum']),   yandex: findColumn(header, ['yandex']),
         expense: findColumn(header, ['xarajat','expense','расход']),
         gum:     findColumn(header, ['jvachka','жвачка','gum']),
-        cash:    findColumn(header, ['naqd summa','naqd','наличные','cash']),
+        cash:    findColumn(header, ['nalichka','наличка','naqd summa','naqd','наличные','cash']),
         note:    findColumn(header, ['izoh','note','комментарий'])
       }
+
+      // Eski format: filial | sana | smena(number) | ...
+      // Yangi format: filial | smena(label) | sana | итого | наличка | ...
+      // Fark: yangi formatda smena ustuni labeldan oldin keladi, sana ikkinchi pozitsiyada
+      const isNewFormat = col.smena >= 0 && col.smena < col.date
+
       const insertRows = []
       for (const r of rows) {
+        // Filial ustuni yoki birinchi ustun
         const branchName = String(readCell(r, col.branch, r[0]) || '').trim()
         const branchRow  = branches.find(b => b.name === branchName || b.code === branchName || b.id === branchName)
         if (!branchRow) continue
+
+        // Smena: yangi formatda label ("1 smena"/"2 смена"), eskisida raqam
+        const smenaRaw = String(readCell(r, col.smena, isNewFormat ? r[1] : r[2]) || '').trim().toLowerCase()
+        // ИТОГ satrlarini o'tkazib yuborish
+        if (/итог|итого|jami|total/i.test(smenaRaw)) continue
+        // Smena raqamini label yoki raqamdan chiqarish
+        const shift_no = /^2|.*2.*sm/i.test(smenaRaw) ? 2 : (toNumber(smenaRaw) || 1)
+
+        const dateCol = isNewFormat ? r[2] : r[1]
+        const order_date = toDateOnly(readCell(r, col.date, dateCol))
+
+        // Yangi formatda ustun tartibi: filial | smena | sana | итого | наличка | uzcard | ...
+        // Eski: filial | sana | smena | jami | uzcard | ...
+        const offset = isNewFormat ? 1 : 0   // yangi formatda ustunlar 1 ga siljigan
+
         const draft = {
-          total: toNumber(readCell(r, col.total, r[3])), uzcard: toNumber(readCell(r, col.uzcard, r[4])),
-          humo: toNumber(readCell(r, col.humo, r[5])),   rahmat: toNumber(readCell(r, col.rahmat, r[6])),
-          rxmt: toNumber(readCell(r, col.rxmt, r[7])),   uzum: toNumber(readCell(r, col.uzum, r[8])),
-          yandex: toNumber(readCell(r, col.yandex, r[9])), expense: toNumber(readCell(r, col.expense, r[10])),
-          gum_count: toNumber(readCell(r, col.gum, r[11]))
+          total:     toNumber(readCell(r, col.total,   r[3 + offset])),
+          uzcard:    toNumber(readCell(r, col.uzcard,  r[5 + offset])),
+          humo:      toNumber(readCell(r, col.humo,    r[6 + offset])),
+          rahmat:    toNumber(readCell(r, col.rahmat,  r[7 + offset])),
+          rxmt:      toNumber(readCell(r, col.rxmt,    r[8 + offset])),
+          uzum:      toNumber(readCell(r, col.uzum,    r[9 + offset])),
+          yandex:    toNumber(readCell(r, col.yandex,  r[10 + offset])),
+          expense:   toNumber(readCell(r, col.expense, r[11 + offset])),
+          gum_count: toNumber(readCell(r, col.gum,     r[12 + offset]))
         }
         const expectedCash  = calcOrderExpected(draft)
-        const actualCashRaw = readCell(r, col.cash, r[12])
+        // Yangi formatda nalichka = r[4] (smena|sana|итого|наличка|...)
+        const cashFallback  = isNewFormat ? r[4] : r[12]
+        const actualCashRaw = readCell(r, col.cash, cashFallback)
         const actualCash    = String(actualCashRaw || '').trim() !== '' ? toNumber(actualCashRaw) : expectedCash
-        const order_date    = toDateOnly(readCell(r, col.date, r[1]))
-        const shift_no      = toNumber(readCell(r, col.shift, r[2])) || 1
+        const noteCol       = isNewFormat ? r[13] : r[13]
         const exists  = orders.some(o => o.branch_id === branchRow.id && o.order_date === order_date && num(o.shift_no) === shift_no)
         const inBatch = insertRows.some(o => o.branch_id === branchRow.id && o.order_date === order_date && num(o.shift_no) === shift_no)
         if (exists || inBatch) continue
-        insertRows.push({ branch_id: branchRow.id, order_date, shift_no, ...draft, gum_price: 1000, cash_amount: actualCash, manual_cash: actualCash !== expectedCash, note: readCell(r, col.note, '') || 'Excel import', status: 'CLOSED', created_by: user.id })
+        insertRows.push({ branch_id: branchRow.id, order_date, shift_no, ...draft, gum_price: 1000, cash_amount: actualCash, manual_cash: actualCash !== expectedCash, note: readCell(r, col.note, noteCol) || 'Excel import', status: 'CLOSED', created_by: user.id })
       }
       if (!insertRows.length) return notify(tr.importOrdersNoRows)
       const { error } = await supabase.from('shift_orders').insert(insertRows)
@@ -1041,21 +1198,40 @@ export default function useAppData() {
   }, [branches, orders, user, tr, loadOrders, loadCashRows, notify])
 
   const downloadOrdersTemplate = useCallback(() => {
+    // DD.MM.YYYY format — matches screenshot & toDateOnly parser
+    const fmtDate = d => d ? d.split('-').reverse().join('.') : ''
+    const todayFmt = fmtDate(today())
+
     const instrData = [
-      ['ORDERLAR IMPORT SHABLONI'],[''],['QOIDALAR:'],
+      ['ORDERLAR IMPORT SHABLONI'], [''],
+      ['QOIDALAR:'],
       ["1. \"Orderlar\" varaqasini to'ldiring"],
-      ['2. Sana formati: YYYY-MM-DD'],['3. Smena: 1 yoki 2'],
-      ["4. Barcha summalar so'mda"],[''],['FILIALLAR:'],
+      [`2. Sana formati: KK.OO.YYYY  (masalan: ${todayFmt})`],
+      ['3. Smena ustuniga:  "1 smena"  yoki  "2 smena"  deb yozing'],
+      ["4. Наличка bo'sh qolsa — Итого minus karta to'lovlari avtomatik hisoblanadi"],
+      ["5. Barcha summalar so'mda (tiyin emas)"],
+      ["6. ИТОГ satrlarini qo'shmang — tizim o'zi hisoblaydi"],
+      [''],
+      ['FILIALLAR:'],
       ...branches.map(b => [`  ${b.name}`, `(kod: ${b.code})`])
     ]
-    const headers = ['filial','sana','smena','jami_savdo','uzcard','humo','rahmat','rxmt','uzum','yandex','xarajat','jvachka','naqd','izoh']
+
+    // Columns match screenshot exactly (без Click — u bazada yo'q)
+    const headers = [
+      'filial', 'smena', 'sana', 'итого', 'наличка',
+      'uzcard', 'humo', 'rahmat', 'rxmt', 'uzum', 'yandex',
+      'расход', 'жвачка', 'izoh'
+    ]
+
     const exampleRows = branches.flatMap(b => [
-      [b.name, today(), 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 'Misol 1-smena'],
-      [b.name, today(), 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, '', 'Misol 2-smena']
+      [b.name, '1 smena', todayFmt, 0, '', 0, 0, 0, 0, 0, 0, 0, 0, 'Misol 1-smena'],
+      [b.name, '2 smena', todayFmt, 0, '', 0, 0, 0, 0, 0, 0, 0, 0, 'Misol 2-smena']
     ])
+
     downloadXLSX('orderlar-shablon.xlsx', [
-      { name: "Ko'rsatmalar", data: instrData, colWidths: [40, 20] },
-      { name: 'Orderlar', data: [headers, ...exampleRows], colWidths: [20,12,8,14,12,12,12,10,12,12,12,10,14,20] }
+      { name: "Ko'rsatmalar", data: instrData, colWidths: [48, 22] },
+      { name: 'Orderlar', data: [headers, ...exampleRows],
+        colWidths: [22, 10, 13, 14, 14, 12, 12, 12, 10, 12, 12, 12, 13, 22] }
     ])
   }, [branches])
 
@@ -1082,7 +1258,7 @@ export default function useAppData() {
     user, page, loginVal, setLoginVal, password, setPassword, remember, setRemember,
     showPass, setShowPass, loading, toast, mobileMenu, setMobileMenu,
     showNotifications, confirmModal,
-    branches, users, categories, operations, orders, cashRows,
+    branches, allBranches, users, categories, operations, orders, cashRows,
     messages, employees, payrollRuns, payrollItems, company,
     branch, period, setPeriod, lang, setLang, theme, setTheme,
     op, setOp, order, setOrder, employeeForm, setEmployeeForm,
@@ -1109,9 +1285,10 @@ export default function useAppData() {
     approveCash, saveCashEdit, deleteCashRow,
     saveUser, editUserFn, deactivateUser,
     saveCategory, startEditCategory, deleteCategory, cancelEditCategory,
+    saveBranch, toggleBranch, deleteBranch,
     saveEmployee, deleteEmployee, updateEmployee,
     savePayroll, exportPayrollCurrent,
-    saveProfile, uploadAvatar, sendMessage, markChatRead,
+    saveProfile, uploadAvatar, sendMessage, markChatRead, markAllRead,
     saveCompanySettings, testTelegram, deleteTelegramSettings,
     exportAllData, importOperationsCSV, importOrdersCSV,
     downloadOrdersTemplate, downloadOperationsTemplate,

@@ -16,6 +16,7 @@ import EmployeesPage   from './pages/EmployeesPage'
 import PayrollPage     from './pages/PayrollPage'
 import PayrollArchive  from './pages/PayrollArchive'
 import CategoriesPage  from './pages/CategoriesPage'
+import BranchesPage    from './pages/BranchesPage'
 import UsersPage       from './pages/UsersPage'
 import ChatPage        from './pages/ChatPage'
 import ProfilePage     from './pages/ProfilePage'
@@ -33,7 +34,7 @@ export default function App() {
       loginReady={d.loginReady} loading={d.loading} signIn={d.signIn} />
   }
 
-  const markAllRead = () => d.markChatRead(null)
+  const markAllRead = d.markAllRead
 
   return (
     <div className={`app ${d.theme}`}>
@@ -59,7 +60,9 @@ export default function App() {
           markAllRead={markAllRead} setNotificationsSeenKey={() => {}}
           exportAllData={d.exportAllData} loadAll={d.loadAll} />
 
-        <BranchSelector allowedBranches={d.allowedBranches} branch={d.branch} setBranch={d.setBranch} tr={d.tr} />
+        {!['branches','categories','users','profile','chat'].includes(d.page) && (
+          <BranchSelector allowedBranches={d.allowedBranches} branch={d.branch} setBranch={d.setBranch} tr={d.tr} />
+        )}
 
         {d.loading && <div className="loaderLine" />}
 
@@ -146,6 +149,13 @@ export default function App() {
             startEdit={d.startEditCategory} del={d.deleteCategory}
             selectedIds={d.selectedCategoryIds} setSelectedIds={d.setSelectedCategoryIds}
             bulkDelete={d.deleteManyCategories} />
+        )}
+
+        {d.page === 'branches' && d.isAdmin && (
+          <BranchesPage tr={d.tr} branches={d.allBranches}
+            saveBranch={d.saveBranch}
+            deleteBranch={d.deleteBranch}
+            toggleBranch={d.toggleBranch} />
         )}
 
         {d.page === 'users' && d.isAdmin && (
