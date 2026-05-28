@@ -147,6 +147,7 @@ h1, h2, h3, h4, h5,
   color:#191c1e; font-weight:800; border-radius:var(--radius-xs);
   padding:12px 20px; box-shadow:var(--yellow-shadow);
   position:relative; overflow:hidden; font-size:14px;
+  display:inline-flex; align-items:center; gap:7px; justify-content:center;
 }
 .primary::after {
   content:""; position:absolute; inset:0;
@@ -160,6 +161,7 @@ h1, h2, h3, h4, h5,
   background:var(--card); color:var(--text); font-weight:700;
   border-radius:var(--radius-xs); padding:12px 20px;
   border:1.5px solid var(--line); font-size:14px;
+  display:inline-flex; align-items:center; gap:7px; justify-content:center;
 }
 .secondary:hover { border-color:var(--yellow); box-shadow:var(--glow); }
 
@@ -167,6 +169,7 @@ h1, h2, h3, h4, h5,
   background:linear-gradient(135deg, #c62828, #e53935);
   color:#fff; font-weight:800; border-radius:var(--radius-xs);
   padding:12px 18px; box-shadow:0 8px 22px rgba(186,26,26,.22); font-size:14px;
+  display:inline-flex; align-items:center; gap:6px; justify-content:center;
 }
 .dangerBtn:hover { box-shadow:0 12px 32px rgba(186,26,26,.32); }
 
@@ -222,13 +225,28 @@ h1, h2, h3, h4, h5,
   transition:border-color var(--transition), box-shadow var(--transition), background var(--transition);
 }
 .loginField:focus-within { border-color:var(--yellow); box-shadow:var(--glow); background:#fff; }
-.loginField span  { font-size:17px; opacity:.6; }
+.loginFieldIcon { display:flex; align-items:center; justify-content:center; color:rgba(25,28,30,.45); }
 .loginField input {
   border:0!important; box-shadow:none!important;
   background:transparent!important; padding:14px 6px!important;
   color:#191c1e!important; font-size:15px!important;
 }
 .passField { margin-bottom:0!important; }
+
+/* Eye toggle button inside password row */
+.eyeBtn {
+  border-radius:var(--radius-xs); background:#f1f5f9;
+  color:#475569; display:flex; align-items:center; justify-content:center;
+  width:46px!important;
+}
+.eyeBtn:hover { background:#e2e8f0; transform:none; }
+
+/* Loading spinner inside login button */
+.loginSpinner {
+  display:inline-block; width:18px; height:18px;
+  border:2px solid rgba(25,28,30,.20); border-top-color:#191c1e;
+  border-radius:50%; animation:spin .7s linear infinite;
+}
 
 .loginHint {
   margin-top:12px; padding:10px 14px; border-radius:12px;
@@ -379,15 +397,6 @@ body.dark .topbar { background:rgba(25,29,38,.88); border-color:rgba(255,255,255
   background:var(--card2); border:1.5px solid var(--line); font-weight:900;
 }
 .iconBtn:hover { border-color:var(--yellow); box-shadow:var(--glow); }
-
-.refreshBtn {
-  height:44px; padding:0 16px; border-radius:var(--radius-xs);
-  background:linear-gradient(135deg, #191d26, #252a38);
-  color:#fff; font-weight:800; font-size:13px;
-  box-shadow:0 6px 20px rgba(17,24,39,.16);
-}
-body.dark .refreshBtn { background:linear-gradient(135deg, #252a38, #2e3448); }
-.refreshBtn:hover { box-shadow:0 10px 28px rgba(17,24,39,.24); }
 
 /* ════════════════════════════════════════════════════════════════════
    BRANCH SELECTOR
@@ -753,6 +762,74 @@ body.dark .tgSavedBox{ background:rgba(16,185,129,.04); }
 body.dark .tgEditBox { background:rgba(25,29,38,.96); border-color:rgba(250,189,0,.18); }
 .tgWarning           { padding:8px 12px; border-radius:11px; background:rgba(250,189,0,.10); border:1px solid rgba(250,189,0,.24); color:#92600a; font-weight:800; font-size:12px; margin-bottom:12px; }
 body.dark .tgWarning { color:var(--yellow2); }
+.tgHelpText          { font-size:12px; color:var(--muted); font-weight:600; margin-top:8px; line-height:1.5; }
+.tgHelpText code     { background:var(--card3); padding:2px 6px; border-radius:6px; font-family:monospace; font-size:11px; }
+
+/* ── Per-branch Telegram cards ─────────────────────────────────────── */
+.branchTelegramSection { margin-top:28px; padding-top:22px; border-top:2px solid var(--line); }
+
+.branchTelegramList {
+  display:flex; flex-direction:column; gap:12px; margin-top:14px;
+}
+
+.branchTgCard {
+  border-radius:20px; overflow:hidden;
+  border:1.5px solid var(--line);
+  background:var(--card);
+  box-shadow:var(--shadow-xs);
+  transition:border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+  animation:cardIn .35s cubic-bezier(.2,.8,.2,1) both;
+}
+.branchTgCard:hover { transform:translateY(-1px); box-shadow:var(--shadow-sm); }
+.branchTgCard.connected { border-color:rgba(16,185,129,.28); }
+body.dark .branchTgCard.connected { border-color:rgba(16,185,129,.22); }
+
+.branchTgHeader {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px; border-bottom:1px solid var(--line);
+  background:var(--card2);
+}
+.branchTgCard.connected .branchTgHeader { background:rgba(16,185,129,.04); border-bottom-color:rgba(16,185,129,.15); }
+body.dark .branchTgCard.connected .branchTgHeader { background:rgba(16,185,129,.05); }
+
+.branchTgName {
+  display:flex; align-items:center; gap:8px; font-weight:800; font-size:14px;
+}
+.branchTgName svg { color:var(--muted); }
+.branchCode {
+  font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+  padding:2px 8px; border-radius:999px; background:var(--card3);
+  color:var(--muted);
+}
+
+.branchTgBadge {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:4px 10px; border-radius:999px; font-size:11px; font-weight:800;
+}
+.branchTgBadge.on  { background:rgba(16,185,129,.11); color:#0d9b6e; border:1px solid rgba(16,185,129,.22); }
+.branchTgBadge.off { background:var(--card3); color:var(--muted); border:1px solid var(--line); }
+
+.branchTgInfo { padding:14px 16px; }
+.branchTgRow {
+  display:flex; align-items:baseline; gap:8px; padding:6px 0;
+  border-bottom:1px solid var(--line); font-size:13px;
+}
+.branchTgRow:last-of-type { border:none; }
+.branchTgRow span { font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; width:70px; flex-shrink:0; }
+.branchTgRow b    { font-weight:700; word-break:break-all; }
+.branchTgRow.muted b { color:var(--muted); font-style:italic; }
+.branchTgActions  { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.branchTgActions .secondary,
+.branchTgActions .dangerBtn { padding:8px 14px; font-size:12px; border-radius:10px; }
+
+.branchTgForm { padding:16px; }
+.branchTgHint {
+  display:flex; align-items:flex-start; gap:7px; font-size:12px; color:var(--muted);
+  font-weight:600; margin-bottom:12px; line-height:1.5;
+  padding:8px 11px; border-radius:10px; background:rgba(59,130,246,.06);
+  border:1px solid rgba(59,130,246,.14);
+}
+.branchTgHint svg { margin-top:1px; flex-shrink:0; color:var(--blue); }
 
 /* ════════════════════════════════════════════════════════════════════
    BRANCH RANKING
@@ -783,12 +860,13 @@ body.dark .tgWarning { color:var(--yellow2); }
 ════════════════════════════════════════════════════════════════════ */
 .notificationWrap   { position:relative; display:inline-flex; }
 .notificationButton {
-  width:auto!important; min-width:140px; padding:0 14px;
+  width:auto!important; min-width:130px; padding:0 14px;
   height:44px; border-radius:var(--radius-xs); background:var(--card2);
   border:1.5px solid var(--line); font-weight:800; font-size:13px;
   display:inline-flex; align-items:center; gap:7px; justify-content:center; position:relative;
 }
 .notificationButton span { color:var(--text)!important; font-weight:800; }
+.notificationButton svg  { opacity:.75; }
 .notificationButton:hover { border-color:var(--yellow); box-shadow:var(--glow); }
 
 .topBadge {
@@ -904,8 +982,19 @@ body.dark .notificationPanel { background:rgba(25,29,38,.97)!important; border-c
   background:linear-gradient(135deg, var(--yellow), var(--yellow2));
   color:#191c1e; font-weight:900; box-shadow:var(--yellow-shadow);
   white-space:nowrap; font-size:13px;
+  display:inline-flex; align-items:center; gap:7px;
 }
 .backupBtn:hover { box-shadow:0 12px 32px rgba(250,189,0,.34); }
+
+.refreshBtn {
+  height:44px; padding:0 16px; border-radius:var(--radius-xs);
+  background:linear-gradient(135deg, #191d26, #252a38);
+  color:#fff; font-weight:800; font-size:13px;
+  box-shadow:0 6px 20px rgba(17,24,39,.16);
+  display:inline-flex; align-items:center; gap:7px;
+}
+body.dark .refreshBtn { background:linear-gradient(135deg, #252a38, #2e3448); }
+.refreshBtn:hover { box-shadow:0 10px 28px rgba(17,24,39,.24); }
 
 /* ════════════════════════════════════════════════════════════════════
    CONFIRM MODAL
@@ -1040,6 +1129,9 @@ body.dark .notificationPanel { background:rgba(25,29,38,.97)!important; border-c
 .cards > .card:nth-child(2) { animation-delay:.10s; }
 .cards > .card:nth-child(3) { animation-delay:.15s; }
 
+@keyframes spin {
+  to { transform:rotate(360deg); }
+}
 @keyframes pageIn {
   from { opacity:0; transform:translateY(10px); filter:blur(2px); }
   to   { opacity:1; transform:none; filter:blur(0); }
@@ -1112,6 +1204,72 @@ body.dark .notificationPanel { background:rgba(25,29,38,.97)!important; border-c
 .main > *:nth-child(2) { animation-delay:.06s; }
 .main > *:nth-child(3) { animation-delay:.10s; }
 .main > *:nth-child(4) { animation-delay:.14s; }
+
+/* ── SQL migration banner ── */
+.sqlMigrationBanner {
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, rgba(250,189,0,.12), rgba(250,189,0,.06));
+  border: 1.5px solid rgba(250,189,0,.4);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  animation: pageIn .3s both;
+}
+body.dark .sqlMigrationBanner {
+  background: linear-gradient(135deg, rgba(250,189,0,.10), rgba(250,189,0,.04));
+  border-color: rgba(250,189,0,.3);
+}
+.sqlMigrationRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.sqlMigrationRow strong { color: var(--yellow); }
+.sqlMigrationRow code {
+  background: rgba(0,0,0,.08);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+body.dark .sqlMigrationRow code { background: rgba(255,255,255,.1); }
+.sqlMigrationCode {
+  margin-top: 12px;
+  background: var(--navy3, #0f1117);
+  color: #e2e8f0;
+  border-radius: var(--radius-xs);
+  padding: 14px 16px;
+  font-size: 11.5px;
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre;
+  word-break: normal;
+  border: 1px solid rgba(255,255,255,.07);
+  animation: slideDown .2s both;
+}
+
+/* ── Icon action buttons in tables ── */
+.iconActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-xs);
+  border: none;
+  background: var(--card2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: var(--transition);
+  margin: 0 2px;
+}
+.iconActionBtn:hover { background: var(--card3); color: var(--text); transform: scale(1.08); }
+.iconActionBtn.danger { color: var(--red); }
+.iconActionBtn.danger:hover { background: var(--red2); }
+body.dark .iconActionBtn { background: rgba(255,255,255,.07); color: var(--muted); }
+body.dark .iconActionBtn:hover { background: rgba(255,255,255,.13); color: var(--text); }
+body.dark .iconActionBtn.danger:hover { background: rgba(186,26,26,.22); }
 
 /* ════════════════════════════════════════════════════════════════════
    RESPONSIVE — 1024px

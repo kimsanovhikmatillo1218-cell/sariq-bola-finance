@@ -1,4 +1,5 @@
 import { PERIOD_PAGES } from '../../constants'
+import { IconBell, IconSun, IconMoon, IconDatabase, IconRefresh } from '../ui/Icons'
 
 export default function TopBar({
   page, tr, period, setPeriod, lang, setLang, theme, setTheme,
@@ -19,6 +20,8 @@ export default function TopBar({
             <input type="date" value={period.end}   onChange={e => setPeriod({ ...period, end: e.target.value })} />
           </>
         )}
+
+        {/* Language selector */}
         <div className="langBox">
           <span className={`flagBadge ${lang === 'ru' ? 'ru' : lang === 'cy' ? 'cy' : 'uz'}`} />
           <select className="langSelect" value={lang} onChange={e => setLang(e.target.value)}>
@@ -27,8 +30,11 @@ export default function TopBar({
             <option value="ru">RU</option>
           </select>
         </div>
+
+        {/* Notifications */}
         <div className="notificationWrap">
-          <button className="iconBtn notificationButton" onClick={openNotifications}>
+          <button className="iconBtn notificationButton" onClick={openNotifications} title="Bildirishnomalar">
+            <IconBell size={17} />
             <span>Bildirishnoma</span>
             {notificationCount > 0 && <em className="topBadge">{notificationCount}</em>}
           </button>
@@ -53,12 +59,31 @@ export default function TopBar({
             </div>
           )}
         </div>
-        <button className={`themeSwitch ${theme === 'dark' ? 'active' : ''}`}
-          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-          <span className="themeKnob">{theme === 'light' ? '☀️' : '🌙'}</span>
+
+        {/* Theme toggle */}
+        <button
+          className={`themeSwitch ${theme === 'dark' ? 'active' : ''}`}
+          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+          title={theme === 'light' ? "Qorong'u rejim" : "Yorug' rejim"}
+        >
+          <span className="themeKnob">
+            {theme === 'light' ? <IconSun size={14} /> : <IconMoon size={14} />}
+          </span>
         </button>
-        {isAdmin && <button className="secondary backupBtn" onClick={exportAllData} title="Backup">💾 Backup</button>}
-        <button className="refreshBtn" onClick={loadAll}>{tr.refresh}</button>
+
+        {/* Backup */}
+        {isAdmin && (
+          <button className="secondary backupBtn" onClick={exportAllData} title="Backup">
+            <IconDatabase size={16} />
+            <span>Backup</span>
+          </button>
+        )}
+
+        {/* Refresh */}
+        <button className="refreshBtn" onClick={loadAll} title={tr.refresh}>
+          <IconRefresh size={16} />
+          <span>{tr.refresh}</span>
+        </button>
       </div>
     </header>
   )

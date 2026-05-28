@@ -179,7 +179,12 @@ export default function App() {
             save={d.saveProfile} uploadAvatar={d.uploadAvatar}
             isAdmin={d.isAdmin} company={d.company}
             saveCompany={d.saveCompanySettings} testTelegram={d.testTelegram}
-            deleteCompany={d.deleteTelegramSettings} />
+            deleteCompany={d.deleteTelegramSettings}
+            branches={d.branches}
+            branchTelegrams={d.branchTelegrams}
+            saveBranchTelegram={d.saveBranchTelegram}
+            deleteBranchTelegram={d.deleteBranchTelegram}
+            testBranchTelegram={d.testBranchTelegram} />
         )}
       </main>
     </div>

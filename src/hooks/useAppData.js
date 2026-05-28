@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib'
 import {
-  BRANCH_ORDER, ROLE_MODULES, TEXT, OP_TYPE, CASH_ST,
+  BRANCH_ORDER, ROLE_MODULES, MODULES, TEXT, OP_TYPE, CASH_ST,
   SIGN_IN_RPC
 } from '../constants'
 import {
@@ -48,6 +48,7 @@ export default function useAppData() {
   const [payrollRuns, setPayrollRuns] = useState([])
   const [payrollItems, setPayrollItems] = useState([])
   const [company, setCompany]         = useState(null)
+  const [branchTelegrams, setBranchTelegrams] = useState(null) // null = not loaded yet
 
   // ── Filters & preferences ────────────────────────────────────────────────
   const [branch, setBranchState] = useState(localStorage.getItem('finance_branch') || 'ALL')
@@ -117,10 +118,28 @@ export default function useAppData() {
   const can = useCallback(module => {
     if (!user) return false
     if (user.role === 'ADMIN') return true
-    const row = permissions.find(x => x.user_id === user.id && x.module === module)
-    if (row) return !!row.can_view
+    const userPerms = permissions.filter(x => x.user_id === user.id)
+    if (userPerms.length > 0) {
+      // Explicit ruxsatlar mavjud — FAQAT shularga ko'ra ko'rsatamiz
+      const row = userPerms.find(x => x.module === module)
+      return row ? !!row.can_view : false
+    }
+    // Hech qanday explicit ruxsat yo'q — role defaults ishlatiladi
     return ROLE_MODULES[user.role]?.includes(module) ?? false
   }, [user, permissions])
+
+  // Ruxsat berilmagan sahifada bo'lsa — birinchi ruxsatli sahifaga yo'naltir
+  useEffect(() => {
+    if (!user || user.role === 'ADMIN') return
+    const userPerms = permissions.filter(x => x.user_id === user.id)
+    if (!userPerms.length) return // role defaults — redirect kerak emas
+    const allowed = userPerms.filter(x => x.can_view).map(x => x.module)
+    if (!allowed.includes(page)) {
+      const first = MODULES.find(m => allowed.includes(m))
+      if (first) setPage(first)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, permissions])
 
   const userAllowedBranches = useCallback(u => {
     if (!u) return []
@@ -259,6 +278,11 @@ export default function useAppData() {
     const sorted = (b.data || []).sort((x, y) => BRANCH_ORDER.indexOf(x.code) - BRANCH_ORDER.indexOf(y.code))
     const clean  = (c.data || []).filter(x => !String(x.name || '').toLowerCase().includes('click'))
     setBranches(sorted); setAllBranches(bAll.data || []); setCategories(clean); setCompany(comp.data || null)
+    // Load per-branch telegram configs (graceful if table doesn't exist yet)
+    supabase.from('branch_telegram').select('*').then(({ data, error }) => {
+      if (!error) setBranchTelegrams(data || [])
+      // else: table doesn't exist yet — leave branchTelegrams as null (shows migration hint)
+    })
     const saved = localStorage.getItem('finance_branch')
     if (!saved || saved === 'ALL') { setBranchState('ALL'); return }
     const found = sorted.find(x => x.id === saved) || sorted.find(x => x.code === saved)
@@ -496,9 +520,12 @@ export default function useAppData() {
       : await supabase.from('operations').insert(row).select().single()
     if (res.error) return notify(res.error.message)
     await audit('operations', res.data.id, editOp ? 'UPDATE' : 'INSERT', editOp, row)
+    // Telegram notification (only on new insert, not edits)
+    if (!editOp) sendOperationNotification(branch, row)
     setEditOp(null)
     setOp({ date: today(), type: OP_TYPE.INCOME, account: 'Naqd', category_id: '', amount: '', note: '' })
     await loadOperations(); notify(tr.saveOk)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branch, op, editOp, isAdmin, user, tr, audit, loadOperations, notify])
 
   const deleteRow = useCallback((table, row) => {
@@ -538,17 +565,22 @@ export default function useAppData() {
     })
   }, [isAdmin, tr, showConfirm, loadBase, notify])
 
-  // Edge function o'rniga to'g'ridan-to'g'ri Telegram Bot API ga murojaat
-  // payload.telegram_token / telegram_chat_id berilsa ularni ishlatadi (stale closure muammosidan himoya)
-  const sendTelegramViaEdge = useCallback(async payload => {
-    const token  = String(payload.telegram_token  || company?.telegram_token  || '').trim()
-    const chatId = String(payload.telegram_chat_id || company?.telegram_chat_id || '').trim()
+  // To'g'ridan-to'g'ri Telegram Bot API ga murojaat
+  // branchId berilsa — shu filial konfigini qidiradi, topilmasa global token/chatId ishlatiladi
+  const sendTelegramViaEdge = useCallback(async (payload, branchId) => {
+    let branchToken = '', branchChatId = ''
+    if (branchId && Array.isArray(branchTelegrams)) {
+      const bt = branchTelegrams.find(x => x.branch_id === branchId)
+      if (bt) { branchToken = String(bt.telegram_token || '').trim(); branchChatId = String(bt.telegram_chat_id || '').trim() }
+    }
+    const token  = String(payload.telegram_token  || branchToken  || company?.telegram_token  || '').trim()
+    const chatId = String(payload.telegram_chat_id || branchChatId || company?.telegram_chat_id || '').trim()
     if (!token)  throw new Error('Bot Token kiritilmagan. Avval Profil → Telegram sozlamalarini saqlang.')
     if (!chatId) throw new Error('Chat ID kiritilmagan. Avval Profil → Telegram sozlamalarini saqlang.')
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: payload.text })
+      body: JSON.stringify({ chat_id: chatId, text: payload.text, parse_mode: 'HTML' })
     })
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}))
@@ -557,7 +589,7 @@ export default function useAppData() {
     const data = await res.json()
     if (!data.ok) throw new Error(data.description || 'Telegram yuborilmadi')
     return data
-  }, [company?.telegram_token, company?.telegram_chat_id])
+  }, [company?.telegram_token, company?.telegram_chat_id, branchTelegrams])
 
   const sendTelegramReport = useCallback(async (branchId, orderDate) => {
     try {
@@ -605,9 +637,44 @@ export default function useAppData() {
         `➖ Расход: ${fmt(jExp)}`, `🍬 Жвачка: ${jGum}`,
         `⚖️ Излишка/Недостача: ${jSign}${jDiff.toLocaleString('ru-RU')}`
       ].join('\n')
+      // Order hisoboti FAQAT global telegramga boradi (filial telegram emas)
       await sendTelegramViaEdge({ type: 'report', text })
     } catch (e) { console.error('Telegram xatosi:', e) }
   }, [sendTelegramViaEdge])
+
+  // ── Telegram: operation notification ────────────────────────────────────
+  const sendOperationNotification = useCallback(async (branchId, opRow) => {
+    try {
+      const hasBranchTg = Array.isArray(branchTelegrams) && branchTelegrams.some(bt => bt.branch_id === branchId && bt.telegram_chat_id)
+      const hasGlobal   = !!(company?.telegram_chat_id)
+      if (!hasBranchTg && !hasGlobal) return
+
+      const branchObj  = allBranches.find(b => b.id === branchId)
+      const branchName = branchObj?.name || "Noma'lum"
+      const cat        = categories.find(c => c.id === opRow.category_id)
+      const catLabel   = cat?.name || "Noma'lum"
+      const isIncome   = opRow.type === OP_TYPE.INCOME
+      const typeIcon   = isIncome ? '📥' : '📤'
+      const typeLabel  = isIncome ? 'KIRIM' : 'CHIQIM'
+      const sign       = isIncome ? '+' : '−'
+      const fmt = n => Number(n || 0).toLocaleString('ru-RU')
+      const dateStr = new Date().toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' })
+      const timeStr = new Date().toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' })
+
+      const text = [
+        `<b>🏪 ${branchName}</b>`,
+        `${typeIcon} <b>${typeLabel}</b>`,
+        ``,
+        `📂 Kategoriya: ${catLabel}`,
+        `💰 Summa: <b>${sign}${fmt(opRow.amount)} so'm</b>`,
+        `🏦 Hisob: ${opRow.account || 'Naqd'}`,
+        opRow.note ? `📝 Izoh: ${opRow.note}` : null,
+        `⏰ ${dateStr} ${timeStr}`
+      ].filter(Boolean).join('\n')
+
+      await sendTelegramViaEdge({ text }, branchId)
+    } catch (e) { console.error('Operation Telegram xatosi:', e) }
+  }, [branchTelegrams, company?.telegram_chat_id, allBranches, categories, sendTelegramViaEdge])
 
   // ── CRUD: Orders ──────────────────────────────────────────────────────────
   const saveOrder = useCallback(async () => {
@@ -722,8 +789,11 @@ export default function useAppData() {
     if (duplicate) return notify(tr.userLoginBusy)
     const payload = { full_name: newUser.full_name, login: cleanLogin, role: newUser.role, active: true }
     if (newUser.password) {
-      try { payload.password_hash = await serverHashPassword(newUser.password); payload.password = null }
-      catch (e) { return notify('Parol hash xatosi: ' + (e.message || "Noma'lum")) }
+      try {
+        payload.password_hash = await serverHashPassword(newUser.password)
+        // password ustuni mavjud bo'lsa plain text ham saqlaymiz (admin ko'rishi uchun)
+        if (users.some(u => 'password' in u)) payload.password = newUser.password
+      } catch (e) { return notify('Parol hash xatosi: ' + (e.message || "Noma'lum")) }
     }
     if (newUser.id) {
       const { error } = await supabase.from('users').update(payload).eq('id', newUser.id)
@@ -755,7 +825,7 @@ export default function useAppData() {
   const editUserFn = useCallback(u => {
     const branchIds = userBranches.filter(x => x.user_id === u.id).map(x => x.branch_id)
     const modules   = permissions.filter(x => x.user_id === u.id && x.can_view).map(x => x.module)
-    setNewUser({ id: u.id, full_name: u.full_name || '', login: u.login || '', password: '', role: u.role || 'SMENA_MANAGER', branchIds, modules: modules.length ? modules : [] })
+    setNewUser({ id: u.id, full_name: u.full_name || '', login: u.login || '', password: u.password || '', role: u.role || 'SMENA_MANAGER', branchIds, modules: modules.length ? modules : [] })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [userBranches, permissions])
 
@@ -1033,6 +1103,51 @@ export default function useAppData() {
     })
   }, [showConfirm, notify])
 
+  // ── Per-branch Telegram CRUD ──────────────────────────────────────────────
+  const saveBranchTelegram = useCallback(async (branchId, form) => {
+    if (!form.telegram_chat_id?.trim()) return notify('Chat ID kiritilmagan')
+    const payload = {
+      branch_id:        branchId,
+      telegram_token:   String(form.telegram_token   || '').trim(),
+      telegram_chat_id: String(form.telegram_chat_id || '').trim()
+    }
+    const existing = (branchTelegrams || []).find(bt => bt.branch_id === branchId)
+    const res = existing?.id
+      ? await supabase.from('branch_telegram').update(payload).eq('id', existing.id).select().single()
+      : await supabase.from('branch_telegram').insert(payload).select().single()
+    if (res.error) { notify(res.error.message); return }
+    setBranchTelegrams(prev => {
+      const list = (prev || []).filter(bt => bt.branch_id !== branchId)
+      return [...list, { ...(existing || {}), ...payload, id: res.data?.id ?? existing?.id }]
+    })
+    notify('Filial Telegram saqlandi ✅')
+  }, [branchTelegrams, notify])
+
+  const deleteBranchTelegram = useCallback(branchId => {
+    showConfirm("Filial Telegram konfigini o'chirasizmi?", async () => {
+      const existing = (branchTelegrams || []).find(bt => bt.branch_id === branchId)
+      if (!existing?.id) return
+      const { error } = await supabase.from('branch_telegram').delete().eq('id', existing.id)
+      if (error) return notify(error.message)
+      setBranchTelegrams(prev => (prev || []).filter(bt => bt.branch_id !== branchId))
+      notify("Filial Telegram o'chirildi")
+    })
+  }, [branchTelegrams, showConfirm, notify])
+
+  const testBranchTelegram = useCallback(async (branchId, form) => {
+    notify('Test xabar yuborilmoqda...')
+    try {
+      const branchObj = allBranches.find(b => b.id === branchId)
+      const text = `✅ <b>${branchObj?.name || 'Filial'}</b> — Sariq Bola Finance bot ulanishi tekshirildi!`
+      await sendTelegramViaEdge({
+        text,
+        telegram_token:   String(form?.telegram_token   || '').trim() || undefined,
+        telegram_chat_id: String(form?.telegram_chat_id || '').trim() || undefined
+      }, branchId)
+      notify('Test xabar yuborildi ✅')
+    } catch (e) { notify('Telegram xatosi: ' + (e.message || "Noma'lum")) }
+  }, [allBranches, sendTelegramViaEdge, notify])
+
 
 
   // ── Import / Export ───────────────────────────────────────────────────────
@@ -1259,7 +1374,7 @@ export default function useAppData() {
     showPass, setShowPass, loading, toast, mobileMenu, setMobileMenu,
     showNotifications, confirmModal,
     branches, allBranches, users, categories, operations, orders, cashRows,
-    messages, employees, payrollRuns, payrollItems, company,
+    messages, employees, payrollRuns, payrollItems, company, branchTelegrams,
     branch, period, setPeriod, lang, setLang, theme, setTheme,
     op, setOp, order, setOrder, employeeForm, setEmployeeForm,
     payroll, setPayroll, newUser, setNewUser, newCat, setNewCat, editCat,
@@ -1290,6 +1405,7 @@ export default function useAppData() {
     savePayroll, exportPayrollCurrent,
     saveProfile, uploadAvatar, sendMessage, markChatRead, markAllRead,
     saveCompanySettings, testTelegram, deleteTelegramSettings,
+    saveBranchTelegram, deleteBranchTelegram, testBranchTelegram,
     exportAllData, importOperationsCSV, importOrdersCSV,
     downloadOrdersTemplate, downloadOperationsTemplate,
     exportOperations: (rows) => exportOperations(rows, tr, catName),

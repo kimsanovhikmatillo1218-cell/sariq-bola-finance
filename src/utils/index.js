@@ -1,5 +1,3 @@
-import { supabase } from '../lib'
-import { HASH_RPC } from '../constants'
 import * as XLSX from 'xlsx'
 
 // ── Basic helpers ─────────────────────────────────────────────────────────────
@@ -64,10 +62,10 @@ export const calcExpected = row =>
   num(row.cash_amount) + num(row.card_amount) + num(row.delivery_amount)
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
+// Client-side SHA-256 (no server RPC required)
 export const serverHashPassword = async pw => {
-  const { data, error } = await supabase.rpc(HASH_RPC, { p_password: pw })
-  if (error) throw error
-  return data
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(pw)))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
 // ── Sort / Toggle ─────────────────────────────────────────────────────────────
