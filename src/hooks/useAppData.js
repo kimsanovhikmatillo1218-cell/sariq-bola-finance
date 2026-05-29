@@ -351,12 +351,13 @@ export default function useAppData() {
   }, [loadUsersAndAccess, loadOperations, loadOrders, loadCashRows, loadMessages, loadPayrollData])
 
   // ── Push notifications ───────────────────────────────────────────────────
-  const [pushGranted, setPushGranted] = useState(() => Notification?.permission === 'granted')
+  // Use window.Notification to avoid ReferenceError on iOS Safari (no Notification API)
+  const [pushGranted, setPushGranted] = useState(() => window.Notification?.permission === 'granted')
   const [pushDismissed, setPushDismissed] = useState(() => !!localStorage.getItem('finance_push_dismissed'))
 
   const requestPush = useCallback(async () => {
     if (!('Notification' in window)) return
-    const result = await Notification.requestPermission()
+    const result = await window.Notification.requestPermission()
     setPushGranted(result === 'granted')
     if (result !== 'granted') { localStorage.setItem('finance_push_dismissed', '1'); setPushDismissed(true) }
   }, [])
@@ -366,8 +367,8 @@ export default function useAppData() {
   }, [])
 
   const showPushNotification = useCallback((title, body) => {
-    if (Notification?.permission === 'granted') {
-      new Notification(title, { body, icon: '/favicon.svg' })
+    if (window.Notification?.permission === 'granted') {
+      new window.Notification(title, { body, icon: '/sariq-bola-finance/favicon.svg' })
     }
   }, [])
 
