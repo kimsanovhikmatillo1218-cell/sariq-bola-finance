@@ -1,5 +1,19 @@
 import { PERIOD_PAGES } from '../../constants'
-import { IconBell, IconSun, IconMoon, IconDatabase, IconRefresh } from '../ui/Icons'
+import {
+  IconBell, IconSun, IconMoon, IconDatabase, IconRefresh,
+  IconX, IconChat, IconCash, IconClipboard, IconCheck
+} from '../ui/Icons'
+
+const NOTIF_ICONS = {
+  chat:         <IconChat size={14} />,
+  cash:         <IconCash size={14} />,
+  orderReports: <IconClipboard size={14} />,
+}
+const NOTIF_COLORS = {
+  chat:         '#fabd00',
+  cash:         '#22c55e',
+  orderReports: '#3b82f6',
+}
 
 export default function TopBar({
   page, tr, period, setPeriod, lang, setLang, theme, setTheme,
@@ -33,29 +47,58 @@ export default function TopBar({
 
         {/* Notifications */}
         <div className="notificationWrap">
-          <button className="iconBtn notificationButton" onClick={openNotifications} title="Bildirishnomalar">
+          <button className={`iconBtn notificationButton ${notificationCount > 0 ? 'hasNew' : ''}`} onClick={openNotifications} title="Bildirishnomalar">
             <IconBell size={17} />
             <span>Bildirishnoma</span>
             {notificationCount > 0 && <em className="topBadge">{notificationCount}</em>}
           </button>
           {showNotifications && (
             <div className="notificationPanel">
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:9 }}>
+              <div className="notifHeader">
                 <b>Bildirishnomalar</b>
-                <button onClick={openNotifications} style={{ background:'none', border:'none', color:'var(--muted)', fontSize:16, padding:'2px 6px', borderRadius:8, cursor:'pointer' }}>✕</button>
+                <button className="notifClose" onClick={openNotifications} title="Yopish">
+                  <IconX size={14} />
+                </button>
               </div>
-              {notifications.length === 0 && <p>Yangi bildirishnoma yo'q</p>}
-              {notifications.map(n => (
-                <button className="notificationItem" key={n.id} onClick={() => {
-                  changePage(n.page)
-                  if (n.page === 'chat') markAllRead()
+
+              {notifications.length === 0 ? (
+                <div className="notifEmpty">
+                  <IconBell size={28} />
+                  <span>Bildirishnomalar yo'q</span>
+                </div>
+              ) : (
+                <div className="notifList">
+                  {notifications.map(n => (
+                    <button className="notificationItem" key={n.id} onClick={() => {
+                      changePage(n.page)
+                      if (n.page === 'chat') markAllRead()
+                      localStorage.setItem('finance_notifications_seen_key', notificationKey)
+                      setNotificationsSeenKey(notificationKey)
+                      openNotifications()
+                    }}>
+                      <span className="notifIcon" style={{ background: `${NOTIF_COLORS[n.page] || '#94a3b8'}22`, color: NOTIF_COLORS[n.page] || '#94a3b8' }}>
+                        {NOTIF_ICONS[n.page] || <IconBell size={14} />}
+                      </span>
+                      <div className="notifBody">
+                        <strong>{n.title}</strong>
+                        <span>{n.text}</span>
+                      </div>
+                      <span className="notifArrow">›</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {notifications.length > 0 && (
+                <button className="notifMarkAll" onClick={() => {
+                  markAllRead()
                   localStorage.setItem('finance_notifications_seen_key', notificationKey)
                   setNotificationsSeenKey(notificationKey)
                   openNotifications()
                 }}>
-                  <strong>{n.title}</strong><span>{n.text}</span>
+                  <IconCheck size={13} /> Hammasini o'qildi deb belgilash
                 </button>
-              ))}
+              )}
             </div>
           )}
         </div>

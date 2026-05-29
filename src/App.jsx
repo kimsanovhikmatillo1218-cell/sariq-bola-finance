@@ -66,8 +66,8 @@ export default function App() {
 
         {d.loading && <div className="loaderLine" />}
 
-        {d.page === 'dashboard'      && <Dashboard tr={d.tr} stats={d.stats} />}
-        {d.page === 'salesAnalytics' && <SalesAnalytics tr={d.tr} data={d.salesStats} />}
+        {d.page === 'dashboard'      && <Dashboard tr={d.tr} stats={d.stats} operations={d.operations} selectedBranchIds={d.selectedBranchIds} period={d.period} />}
+        {d.page === 'salesAnalytics' && <SalesAnalytics tr={d.tr} data={d.salesStats} orders={d.orders} selectedBranchIds={d.selectedBranchIds} />}
 
         {d.page === 'order' && (
           <OrderPage tr={d.tr} isAdmin={d.isAdmin} order={d.order} setOrder={d.setOrder}
@@ -170,7 +170,8 @@ export default function App() {
             messages={d.messages} me={d.user}
             chatUser={d.chatUser} setChatUser={d.setChatUser}
             chatText={d.chatText} setChatText={d.setChatText}
-            send={d.sendMessage} markChatRead={d.markChatRead} isOnline={isOnline} />
+            send={d.sendMessage} sendMedia={d.sendMediaMessage}
+            markChatRead={d.markChatRead} isOnline={isOnline} />
         )}
 
         {d.page === 'profile' && (

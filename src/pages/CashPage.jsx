@@ -3,6 +3,7 @@ import Panel from '../components/ui/Panel'
 import Field from '../components/ui/Field'
 import { money, num, cashDifferenceText } from '../utils'
 import { CASH_ST } from '../constants'
+import { IconEdit, IconTrash, IconCheck, IconSave, IconX } from '../components/ui/Icons'
 
 export default function CashPage({ tr, rows, approve, isAdmin, editRow, setEditRow, editForm, setEditForm, saveCashEdit, delCash, dateFilter, setDateFilter }) {
   const [acceptValues, setAcceptValues] = useState({})
@@ -20,7 +21,9 @@ export default function CashPage({ tr, rows, approve, isAdmin, editRow, setEditR
           <label>{tr.end}</label>
           <input type="date" value={dateFilter.end} onChange={e => setDateFilter({ ...dateFilter, end: e.target.value })} />
         </div>
-        <button className="secondary" style={{ alignSelf: 'flex-end' }} onClick={() => setDateFilter({ start: '', end: '' })}>✕ Tozalash</button>
+        <button className="secondary" style={{ alignSelf: 'flex-end' }} onClick={() => setDateFilter({ start: '', end: '' })}>
+          <IconX size={14} style={{ marginRight: 4 }} /> Tozalash
+        </button>
       </div>
       <div className="cards two" style={{ marginBottom: 16 }}>
         <div className="card"><span>Kutilayotgan ({pending.length} ta)</span><b>{money(pending.reduce((s,r) => s+num(r.expected_cash), 0))}</b></div>
@@ -28,14 +31,20 @@ export default function CashPage({ tr, rows, approve, isAdmin, editRow, setEditR
       </div>
       {editRow && (
         <div className="cashEditBox">
-          <h4>✏️ Inkassatsiyani tahrirlash</h4>
+          <h4 style={{ display:'flex', alignItems:'center', gap:7, marginBottom:14 }}>
+            <IconEdit size={16} /> Inkassatsiyani tahrirlash
+          </h4>
           <div className="grid">
             <Field label="Kutilgan summa" value={editForm.expected_cash ?? ''} set={v => setEditForm({ ...editForm, expected_cash: v })} />
             <Field label="Izoh" value={editForm.note ?? ''} set={v => setEditForm({ ...editForm, note: v })} text />
           </div>
           <div className="actions">
-            <button className="primary" onClick={() => saveCashEdit(editRow, editForm)}>💾 Saqlash</button>
-            <button className="secondary" onClick={() => setEditRow(null)}>✕ Bekor</button>
+            <button className="primary" onClick={() => saveCashEdit(editRow, editForm)}>
+              <IconSave size={15} style={{ marginRight: 5 }} /> Saqlash
+            </button>
+            <button className="secondary" onClick={() => setEditRow(null)}>
+              <IconX size={14} style={{ marginRight: 5 }} /> Bekor
+            </button>
           </div>
         </div>
       )}
@@ -67,18 +76,24 @@ export default function CashPage({ tr, rows, approve, isAdmin, editRow, setEditR
                 </td>
                 <td><span className={`status ${r.status}`}>{r.status === CASH_ST.PENDING ? 'Kutilmoqda' : 'Tasdiqlangan'}</span></td>
                 <td>{r.note}</td>
-                <td>
+                <td style={{ whiteSpace: 'nowrap' }}>
                   {r.status === CASH_ST.PENDING && (
-                    <button className="primary" style={{ padding:'8px 12px', fontSize:12 }} onClick={() => {
+                    <button className="iconActionBtn" title="Qabul" style={{ background:'var(--green)', color:'#fff', border:'none' }} onClick={() => {
                       const val = acceptValues[r.id]
                       approve(r, val !== undefined && val !== '' ? val : r.expected_cash)
                       setAcceptValues(v => { const n = { ...v }; delete n[r.id]; return n })
-                    }}>✅ Qabul</button>
+                    }}>
+                      <IconCheck size={15} />
+                    </button>
                   )}
                   {isAdmin && (
                     <>
-                      <button onClick={() => { setEditRow(r); setEditForm({ expected_cash: r.expected_cash, note: r.note || '' }) }}>✏️</button>
-                      <button onClick={() => delCash(r)}>🗑</button>
+                      <button className="iconActionBtn" title="Tahrirlash" onClick={() => { setEditRow(r); setEditForm({ expected_cash: r.expected_cash, note: r.note || '' }) }}>
+                        <IconEdit size={15} />
+                      </button>
+                      <button className="iconActionBtn danger" title="O'chirish" onClick={() => delCash(r)}>
+                        <IconTrash size={15} />
+                      </button>
                     </>
                   )}
                 </td>

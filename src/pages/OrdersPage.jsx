@@ -1,6 +1,7 @@
 import { useMemo, Fragment } from 'react'
 import Panel from '../components/ui/Panel'
 import { money, num, cashDifferenceText, calcOrderExpected } from '../utils'
+import { IconDownload, IconUpload, IconClipboard, IconPrint, IconEdit, IconTrash, IconCalendar } from '../components/ui/Icons'
 
 export default function OrdersPage({ tr, rows, isAdmin, edit, del, exportCSV, importCSV, downloadTemplate, printPDF }) {
   const grouped = useMemo(() => {
@@ -16,14 +17,23 @@ export default function OrdersPage({ tr, rows, isAdmin, edit, del, exportCSV, im
   return (
     <Panel title={tr.orderReports}>
       <div className="reportActions actions">
-        <button className="secondary" onClick={exportCSV}>📊 {tr.exportExcel}</button>
+        <button className="secondary" onClick={exportCSV}>
+          <IconDownload size={15} style={{ marginRight: 6 }} />{tr.exportExcel}
+        </button>
         {isAdmin && (
           <>
-            <label className="secondary fileAction">📥 Import<input type="file" accept=".csv,.xlsx,.xls" onChange={importCSV} /></label>
-            <button className="secondary" onClick={downloadTemplate}>📋 Shablon</button>
+            <label className="secondary fileAction" style={{ cursor:'pointer' }}>
+              <IconUpload size={15} style={{ marginRight: 6 }} /> Import
+              <input type="file" accept=".csv,.xlsx,.xls" onChange={importCSV} style={{ display:'none' }} />
+            </label>
+            <button className="secondary" onClick={downloadTemplate}>
+              <IconClipboard size={15} style={{ marginRight: 6 }} /> Shablon
+            </button>
           </>
         )}
-        <button className="secondary" onClick={printPDF}>🖨️ Print</button>
+        <button className="secondary" onClick={printPDF}>
+          <IconPrint size={15} style={{ marginRight: 6 }} /> Print
+        </button>
       </div>
       {rows.length === 0 && <div className="empty">Ma'lumot yo'q</div>}
       {rows.length > 0 && (
@@ -53,7 +63,11 @@ export default function OrdersPage({ tr, rows, isAdmin, edit, del, exportCSV, im
                 return (
                   <Fragment key={group.date + group.branch}>
                     <tr className="orderGroupHeader">
-                      <td colSpan={isAdmin ? 16 : 15}>📅 {group.date} — {group.branch}</td>
+                      <td colSpan={isAdmin ? 16 : 15}>
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                          <IconCalendar size={13} /> {group.date} — {group.branch}
+                        </span>
+                      </td>
                     </tr>
                     {group.rows.map(r => {
                       const exp = calcOrderExpected(r), diff = num(r.cash_amount) - exp
@@ -65,7 +79,12 @@ export default function OrdersPage({ tr, rows, isAdmin, edit, del, exportCSV, im
                           <td>{money(exp)}</td><td>{money(r.cash_amount)}</td>
                           <td className={diff < 0 ? 'red' : diff > 0 ? 'green' : ''}>{cashDifferenceText(diff)}</td>
                           <td>{money(r.expense)}</td><td>{r.gum_count}</td>
-                          {isAdmin && <td><button onClick={() => edit(r)}>✏️</button><button onClick={() => del(r)}>🗑</button></td>}
+                          {isAdmin && (
+                            <td style={{ whiteSpace:'nowrap' }}>
+                              <button className="iconActionBtn" title="Tahrirlash" onClick={() => edit(r)}><IconEdit size={14} /></button>
+                              <button className="iconActionBtn danger" title="O'chirish" onClick={() => del(r)}><IconTrash size={14} /></button>
+                            </td>
+                          )}
                         </tr>
                       )
                     })}

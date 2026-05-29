@@ -414,6 +414,13 @@ export default function useAppData() {
     touch(); const t = setInterval(touch, 30000); return () => clearInterval(t)
   }, [user?.id])
 
+  // Refresh users list every 60s so online statuses stay current
+  useEffect(() => {
+    if (!user?.id) return
+    const t = setInterval(() => loadUsersAndAccess(), 60000)
+    return () => clearInterval(t)
+  }, [user?.id, loadUsersAndAccess])
+
   // FIX: initPayrollRows endi to'g'ri dep bilan
   useEffect(() => {
     if (employees.length) initPayrollRows()
@@ -1035,6 +1042,24 @@ export default function useAppData() {
     setChatText(''); await loadMessages()
   }, [chatUser, chatText, user, loadMessages, notify])
 
+  const sendMediaMessage = useCallback(async (file) => {
+    if (!chatUser || !file) return
+    const ext  = (file.name?.split('.').pop() || 'bin').toLowerCase()
+    const path = `chat/${user.id}/${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { cacheControl:'3600', upsert:true, contentType: file.type })
+    if (upErr) return notify(upErr.message)
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    const url = data?.publicUrl
+    if (!url) return notify("Fayl URL olinmadi")
+    const isVideo = file.type?.startsWith('video/')
+    const msg = (isVideo ? '[vid]:' : '[img]:') + url
+    const { error } = await supabase.from('messages').insert({
+      sender_id: user.id, receiver_id: chatUser, message: msg, is_read: false
+    })
+    if (error) return notify(error.message)
+    await loadMessages()
+  }, [chatUser, user, loadMessages, notify])
+
   const markChatRead = useCallback(async senderId => {
     if (!user?.id || !senderId) return
     await supabase.from('messages').update({ is_read: true })
@@ -1403,7 +1428,7 @@ export default function useAppData() {
     saveBranch, toggleBranch, deleteBranch,
     saveEmployee, deleteEmployee, updateEmployee,
     savePayroll, exportPayrollCurrent,
-    saveProfile, uploadAvatar, sendMessage, markChatRead, markAllRead,
+    saveProfile, uploadAvatar, sendMessage, sendMediaMessage, markChatRead, markAllRead,
     saveCompanySettings, testTelegram, deleteTelegramSettings,
     saveBranchTelegram, deleteBranchTelegram, testBranchTelegram,
     exportAllData, importOperationsCSV, importOrdersCSV,
