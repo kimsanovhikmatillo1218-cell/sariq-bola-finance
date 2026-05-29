@@ -7,15 +7,9 @@
   "scope": "/sariq-bola-finance/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f4f6fb",
+  "background_color": "#fabd00",
   "theme_color": "#fabd00",
   "icons": [
-    {
-      "src": "/sariq-bola-finance/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
     {
       "src": "/sariq-bola-finance/icon-192.png",
       "sizes": "192x192",
@@ -27,6 +21,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/sariq-bola-finance/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "categories": ["finance", "business"],
