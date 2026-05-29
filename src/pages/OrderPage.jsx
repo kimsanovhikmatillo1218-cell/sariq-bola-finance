@@ -7,8 +7,8 @@ import { IconSpinner, IconSave } from '../components/ui/Icons'
 
 const FIELDS = [
   ['total','total'],['uzcard','uzcard'],['humo','humo'],
-  ['rahmat','rahmat'],['rxmt','rxmt'],['uzum','uzum'],
-  ['yandex','yandex'],['expense','expense'],['gum_count','gum']
+  ['rahmat','rahmat'],['rxmt','rxmt'],['click','Click'],
+  ['uzum','uzum'],['yandex','yandex'],['expense','expense'],['gum_count','gum']
 ]
 
 export default function OrderPage({ tr, isAdmin, order, setOrder, calcCash, saveOrder, editOrder }) {

@@ -52,11 +52,11 @@ export const cashDifferenceText = diff => {
   return (d > 0 ? '+' : '') + money(d)
 }
 
-/** Expected cash = total − all card payments − expense − gum×1000 */
+/** Expected cash = total − all card/digital payments − expense − gum×1000 */
 export const calcOrderExpected = order =>
   num(order.total) - num(order.uzcard) - num(order.humo) -
-  num(order.rahmat) - num(order.rxmt)  - num(order.uzum) -
-  num(order.yandex) - num(order.expense) - num(order.gum_count) * 1000
+  num(order.rahmat) - num(order.rxmt)  - num(order.click) -
+  num(order.uzum)   - num(order.yandex) - num(order.expense) - num(order.gum_count) * 1000
 
 export const calcExpected = row =>
   num(row.cash_amount) + num(row.card_amount) + num(row.delivery_amount)

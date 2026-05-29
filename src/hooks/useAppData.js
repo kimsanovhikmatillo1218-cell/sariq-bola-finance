@@ -61,7 +61,7 @@ export default function useAppData() {
 
   // ── Form state ───────────────────────────────────────────────────────────
   const [op, setOp]       = useState({ date: today(), type: OP_TYPE.INCOME, account: 'Naqd', category_id: '', amount: '', note: '' })
-  const [order, setOrder] = useState({ date: today(), shift_no: '1', total: '', uzcard: '', humo: '', rahmat: '', rxmt: '', uzum: '', yandex: '', expense: '', gum_count: '', cash_amount: '', note: '' })
+  const [order, setOrder] = useState({ date: today(), shift_no: '1', total: '', uzcard: '', humo: '', rahmat: '', rxmt: '', click: '', uzum: '', yandex: '', expense: '', gum_count: '', cash_amount: '', note: '' })
   const [employeeForm, setEmployeeForm] = useState({ full_name: '', position: '', hire_date: today(), salary_type: 'hourly', hourly_rate: '', monthly_salary: '' })
   const [payroll, setPayroll]   = useState({ title: '', part_no: '1', period_start: today(), period_end: today(), rows: [] })
   const [newUser, setNewUser]   = useState({ id: null, full_name: '', login: '', password: '12345', role: 'SMENA_MANAGER', branchIds: [], modules: ['order'] })
@@ -694,6 +694,7 @@ export default function useAppData() {
           `🔹 ${label}`, `💰 Итого: ${fmt(r.total)}`, `💵 Наличка: ${fmt(r.cash_amount)}`,
           `💳 Uzcard: ${fmt(r.uzcard)}`, `💳 Humo: ${fmt(r.humo)}`,
           `🎁 Rahmat: ${fmt(r.rahmat)}`, `🎁 RXMT: ${fmt(r.rxmt)}`,
+          `📲 Click: ${fmt(r.click)}`,
           `🛍 Uzum: ${fmt(r.uzum)}`, `🚕 Yandex: ${fmt(r.yandex)}`,
           `➖ Расход: ${fmt(r.expense)}`, `🍬 Жвачка: ${num(r.gum_count)}`,
           `⚖️ Излишка/Недостача: ${sign}${diff.toLocaleString('ru-RU')}`, `👤 Менеджер: ${mgr}`
@@ -703,9 +704,10 @@ export default function useAppData() {
       const jTotal = T(s1?.total, s2?.total), jCash = T(s1?.cash_amount, s2?.cash_amount)
       const jUzcard = T(s1?.uzcard, s2?.uzcard), jHumo = T(s1?.humo, s2?.humo)
       const jRahmat = T(s1?.rahmat, s2?.rahmat), jRxmt = T(s1?.rxmt, s2?.rxmt)
+      const jClick = T(s1?.click, s2?.click)
       const jUzum = T(s1?.uzum, s2?.uzum), jYandex = T(s1?.yandex, s2?.yandex)
       const jExp = T(s1?.expense, s2?.expense), jGum = T(s1?.gum_count, s2?.gum_count)
-      const jExpected = calcOrderExpected({ total: jTotal, uzcard: jUzcard, humo: jHumo, rahmat: jRahmat, rxmt: jRxmt, uzum: jUzum, yandex: jYandex, expense: jExp, gum_count: jGum })
+      const jExpected = calcOrderExpected({ total: jTotal, uzcard: jUzcard, humo: jHumo, rahmat: jRahmat, rxmt: jRxmt, click: jClick, uzum: jUzum, yandex: jYandex, expense: jExp, gum_count: jGum })
       const jDiff = jCash - jExpected, jSign = jDiff > 0 ? '+' : ''
       const text = [
         `🏪 Филиал: ${branchName}`, `📅 Дата: ${dateStr}`, '',
@@ -767,8 +769,8 @@ export default function useAppData() {
     const row = {
       branch_id: branch, order_date: orderDate, shift_no: num(order.shift_no),
       total: num(order.total), uzcard: num(order.uzcard), humo: num(order.humo),
-      rahmat: num(order.rahmat), rxmt: num(order.rxmt), uzum: num(order.uzum),
-      yandex: num(order.yandex), expense: num(order.expense), gum_count: num(order.gum_count),
+      rahmat: num(order.rahmat), rxmt: num(order.rxmt), click: num(order.click),
+      uzum: num(order.uzum), yandex: num(order.yandex), expense: num(order.expense), gum_count: num(order.gum_count),
       gum_price: 1000, cash_amount: cash,
       manual_cash: String(order.cash_amount || '').trim() !== '',
       note: order.note, status: 'CLOSED', created_by: user.id
@@ -799,7 +801,7 @@ export default function useAppData() {
       notify('1-smena saqlandi ✅')
     }
     setEditOrder(null)
-    setOrder({ date: today(), shift_no: '1', total: '', uzcard: '', humo: '', rahmat: '', rxmt: '', uzum: '', yandex: '', expense: '', gum_count: '', cash_amount: '', note: '' })
+    setOrder({ date: today(), shift_no: '1', total: '', uzcard: '', humo: '', rahmat: '', rxmt: '', click: '', uzum: '', yandex: '', expense: '', gum_count: '', cash_amount: '', note: '' })
     await Promise.all([loadOrders(), loadCashRows()])
   }, [branch, order, editOrder, isAdmin, user, tr, audit, loadOrders, loadCashRows, notify, sendTelegramReport])
 
