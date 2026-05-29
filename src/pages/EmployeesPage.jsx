@@ -3,6 +3,7 @@ import Field from '../components/ui/Field'
 import Select from '../components/ui/Select'
 import { money } from '../utils'
 import { SALARY_T } from '../constants'
+import { IconEdit, IconTrash, IconSave, IconX, IconPlus } from '../components/ui/Icons'
 
 export default function EmployeesPage({ tr, employees, form, setForm, save, del, editEmp, setEditEmp, editForm, setEditForm, saveEdit }) {
   return (
@@ -17,11 +18,15 @@ export default function EmployeesPage({ tr, employees, form, setForm, save, del,
           ? <Field label={tr.hourlyRate}    value={form.hourly_rate}    set={v => setForm({ ...form, hourly_rate: v })} />
           : <Field label={tr.monthlySalary} value={form.monthly_salary} set={v => setForm({ ...form, monthly_salary: v })} />}
       </div>
-      <button className="primary" onClick={save}>{tr.create}</button>
+      <button className="primary" style={{ display:'flex', alignItems:'center', gap:7 }} onClick={save}>
+        <IconPlus size={15} /> {tr.create}
+      </button>
 
       {editEmp && (
         <div className="cashEditBox" style={{ marginTop: 20 }}>
-          <h4>✏️ {tr.edit}</h4>
+          <h4 style={{ display:'flex', alignItems:'center', gap:7, marginBottom:14 }}>
+            <IconEdit size={16} /> {tr.edit}
+          </h4>
           <div className="grid">
             <Field label={tr.fullName} value={editForm.full_name ?? ''} set={v => setEditForm({ ...editForm, full_name: v })} />
             <Field label={tr.position} value={editForm.position ?? ''}  set={v => setEditForm({ ...editForm, position: v })} />
@@ -33,8 +38,12 @@ export default function EmployeesPage({ tr, employees, form, setForm, save, del,
               : <Field label={tr.monthlySalary} value={editForm.monthly_salary ?? ''} set={v => setEditForm({ ...editForm, monthly_salary: v })} />}
           </div>
           <div className="actions">
-            <button className="primary" onClick={() => saveEdit(editEmp, editForm)}>💾 {tr.save}</button>
-            <button className="secondary" onClick={() => setEditEmp(null)}>✕ {tr.cancel}</button>
+            <button className="primary" style={{ display:'flex', alignItems:'center', gap:7 }} onClick={() => saveEdit(editEmp, editForm)}>
+              <IconSave size={15} /> {tr.save}
+            </button>
+            <button className="secondary" style={{ display:'flex', alignItems:'center', gap:6 }} onClick={() => setEditEmp(null)}>
+              <IconX size={14} /> {tr.cancel}
+            </button>
           </div>
         </div>
       )}
@@ -53,9 +62,13 @@ export default function EmployeesPage({ tr, employees, form, setForm, save, del,
               <tr key={e.id}>
                 <td>{i + 1}</td><td>{e.full_name}</td><td>{e.position}</td><td>{e.hire_date}</td>
                 <td>{e.salary_type === SALARY_T.HOURLY ? `${tr.hourly} — ${money(e.hourly_rate)} / soat` : `${tr.monthly} — ${money(e.monthly_salary)}`}</td>
-                <td>
-                  <button onClick={() => { setEditEmp(e); setEditForm({ full_name: e.full_name, position: e.position, hire_date: e.hire_date, salary_type: e.salary_type, hourly_rate: e.hourly_rate || '', monthly_salary: e.monthly_salary || '' }) }}>✏️</button>
-                  <button onClick={() => del(e)}>🗑</button>
+                <td style={{ whiteSpace:'nowrap' }}>
+                  <button className="iconActionBtn" title="Tahrirlash" onClick={() => { setEditEmp(e); setEditForm({ full_name: e.full_name, position: e.position, hire_date: e.hire_date, salary_type: e.salary_type, hourly_rate: e.hourly_rate || '', monthly_salary: e.monthly_salary || '' }) }}>
+                    <IconEdit size={14} />
+                  </button>
+                  <button className="iconActionBtn danger" title="O'chirish" onClick={() => del(e)}>
+                    <IconTrash size={14} />
+                  </button>
                 </td>
               </tr>
             ))}

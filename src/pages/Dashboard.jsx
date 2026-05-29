@@ -1,10 +1,33 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Chart from '../components/ui/Chart'
+import { SkeletonDashboard } from '../components/ui/Skeleton'
 import { money, num } from '../utils'
 import {
   IconTrendUp, IconArrowUpDown, IconCash, IconDollarSign,
   IconBarChart, IconChevronDown, IconCheck
 } from '../components/ui/Icons'
+
+/* CountUp hook */
+function useCountUp(target, duration = 900) {
+  const [val, setVal] = useState(0)
+  const prevRef = useRef(0)
+  useEffect(() => {
+    const start = prevRef.current
+    const diff  = target - start
+    if (diff === 0) return
+    const startTime = performance.now()
+    const raf = () => {
+      const elapsed = performance.now() - startTime
+      const pct = Math.min(elapsed / duration, 1)
+      const ease = 1 - Math.pow(1 - pct, 3)
+      setVal(Math.round(start + diff * ease))
+      if (pct < 1) requestAnimationFrame(raf)
+      else prevRef.current = target
+    }
+    requestAnimationFrame(raf)
+  }, [target, duration])
+  return val
+}
 
 const PERIODS = [
   { label: 'Bugun',        days: 0  },
@@ -28,27 +51,30 @@ function TrendBadge({ value, prev }) {
   )
 }
 
-function KpiCard({ icon: Icon, iconClass, label, value, prev, hint, color }) {
+function KpiCard({ icon: Icon, iconClass, label, rawValue, prev, hint, color }) {
+  const animated = useCountUp(rawValue || 0)
   return (
     <div className={`dashCard ${color || ''}`}>
       <div className={`dashCardIcon ${iconClass || ''}`}><Icon size={20} /></div>
       <div className="dashCardBody">
         <span className="dashCardLabel">{label}</span>
-        <b className="dashCardValue">{value}</b>
+        <b className="dashCardValue">{money(animated)}</b>
         {hint && <small className="dashCardHint">{hint}</small>}
       </div>
       {prev !== undefined && (
         <div className="dashCardTrend">
-          <TrendBadge value={num(value?.replace(/[^0-9]/g, ''))} prev={prev} />
+          <TrendBadge value={rawValue} prev={prev} />
         </div>
       )}
     </div>
   )
 }
 
-export default function Dashboard({ tr, stats, operations, selectedBranchIds, period }) {
+export default function Dashboard({ tr, stats, operations, selectedBranchIds, period, loading }) {
   const [compareOpen, setCompareOpen] = useState(false)
   const [quickPeriod, setQuickPeriod] = useState(null)
+
+  if (loading && (!stats?.incomeRows?.length)) return <SkeletonDashboard />
 
   // Compute current period totals from operations
   const periodTotals = useMemo(() => {
@@ -102,28 +128,28 @@ export default function Dashboard({ tr, stats, operations, selectedBranchIds, pe
         <KpiCard
           icon={IconCash} iconClass="yellow"
           label={tr.cashBalance}
-          value={money(stats.cash)}
+          rawValue={stats.cash}
           hint="Jami naqd qoldiq"
           color="premium"
         />
         <KpiCard
           icon={IconDollarSign} iconClass="blue"
           label={tr.bankBalance}
-          value={money(stats.bank)}
+          rawValue={stats.bank}
           hint="Bank hisob raqami"
           color=""
         />
         <KpiCard
           icon={IconTrendUp} iconClass="green"
           label={tr.totalIncome || "Davr kirimi"}
-          value={money(periodTotals.income)}
+          rawValue={periodTotals.income}
           prev={prevTotals?.income}
           color="good"
         />
         <KpiCard
           icon={IconArrowUpDown} iconClass="red"
           label={tr.totalExpense || "Davr chiqimi"}
-          value={money(periodTotals.expense)}
+          rawValue={periodTotals.expense}
           prev={prevTotals?.expense}
           color="bad"
         />

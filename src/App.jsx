@@ -66,7 +66,21 @@ export default function App() {
 
         {d.loading && <div className="loaderLine" />}
 
-        {d.page === 'dashboard'      && <Dashboard tr={d.tr} stats={d.stats} operations={d.operations} selectedBranchIds={d.selectedBranchIds} period={d.period} />}
+        {/* Push notification permission banner */}
+        {!d.pushGranted && !d.pushDismissed && (
+          <div className="pushBanner">
+            <svg viewBox="0 0 24 24" width={20} height={20} fill="none" stroke="currentColor" strokeWidth={1.85} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span>Yangi xabarlar uchun bildirishnomalarni yoqing</span>
+            <button className="primary" style={{ padding:'8px 14px', fontSize:12 }} onClick={d.requestPush}>Yoqish</button>
+            <button className="secondary" style={{ padding:'8px 12px', fontSize:12 }} onClick={d.dismissPush}>Keyinroq</button>
+          </div>
+        )}
+
+        <div className="pageContent" key={d.page}>
+
+        {d.page === 'dashboard'      && <Dashboard tr={d.tr} stats={d.stats} operations={d.operations} selectedBranchIds={d.selectedBranchIds} period={d.period} loading={d.loading} />}
         {d.page === 'salesAnalytics' && <SalesAnalytics tr={d.tr} data={d.salesStats} orders={d.orders} selectedBranchIds={d.selectedBranchIds} />}
 
         {d.page === 'order' && (
@@ -171,13 +185,16 @@ export default function App() {
             chatUser={d.chatUser} setChatUser={d.setChatUser}
             chatText={d.chatText} setChatText={d.setChatText}
             send={d.sendMessage} sendMedia={d.sendMediaMessage}
+            replyTo={d.replyTo} setReplyTo={d.setReplyTo}
+            deleteMessage={d.deleteMessage}
+            typingUsers={d.typingUsers} broadcastTyping={d.broadcastTyping}
             markChatRead={d.markChatRead} isOnline={isOnline} />
         )}
 
         {d.page === 'profile' && (
           <ProfilePage tr={d.tr} profile={d.profile} setProfile={d.setProfile}
             lang={d.lang} setLang={d.setLang} theme={d.theme} setTheme={d.setTheme}
-            save={d.saveProfile} uploadAvatar={d.uploadAvatar}
+            save={d.saveProfile} uploadAvatar={d.uploadAvatar} changePassword={d.changePassword}
             isAdmin={d.isAdmin} company={d.company}
             saveCompany={d.saveCompanySettings} testTelegram={d.testTelegram}
             deleteCompany={d.deleteTelegramSettings}
@@ -187,6 +204,8 @@ export default function App() {
             deleteBranchTelegram={d.deleteBranchTelegram}
             testBranchTelegram={d.testBranchTelegram} />
         )}
+
+        </div>{/* end pageContent */}
       </main>
     </div>
   )

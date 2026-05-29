@@ -234,10 +234,45 @@ function AvatarCropModal({ file, onConfirm, onCancel }) {
   )
 }
 
+/* ── Password change section ─────────────────────────────────────── */
+function PasswordSection({ changePassword }) {
+  const [form, setForm] = useState({ old: '', new1: '', new2: '' })
+  const [saving, setSaving] = useState(false)
+  const ok = form.old && form.new1 && form.new1 === form.new2 && form.new1.length >= 4
+
+  const handleSave = async () => {
+    if (!ok) return
+    setSaving(true)
+    await changePassword(form.old, form.new1)
+    setForm({ old: '', new1: '', new2: '' })
+    setSaving(false)
+  }
+
+  return (
+    <div className="profileSection" style={{ marginTop:24 }}>
+      <h3 style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+        <IconKey size={17} /> Parolni o'zgartirish
+      </h3>
+      <div className="grid" style={{ gridTemplateColumns:'repeat(3,1fr)' }}>
+        <Field label="Eski parol" value={form.old}  set={v => setForm(f => ({...f, old: v}))}  placeholder="Hozirgi parol" />
+        <Field label="Yangi parol" value={form.new1} set={v => setForm(f => ({...f, new1: v}))} placeholder="Kamida 4 ta belgi" />
+        <Field label="Tasdiqlash" value={form.new2}  set={v => setForm(f => ({...f, new2: v}))} placeholder="Yangi parol takrori" />
+      </div>
+      {form.new1 && form.new2 && form.new1 !== form.new2 && (
+        <p style={{ color:'var(--red)', fontSize:12, fontWeight:700, marginTop:6 }}>Parollar mos kelmaydi</p>
+      )}
+      <button className="primary" style={{ marginTop:12, display:'flex', alignItems:'center', gap:7 }}
+        disabled={!ok || saving} onClick={handleSave}>
+        <IconSave size={15} /> {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+      </button>
+    </div>
+  )
+}
+
 /* ── main ProfilePage ─────────────────────────────────────────────── */
 export default function ProfilePage({
   tr, profile, setProfile, lang, setLang, theme, setTheme,
-  save, uploadAvatar, isAdmin, company, saveCompany, testTelegram,
+  save, uploadAvatar, changePassword, isAdmin, company, saveCompany, testTelegram,
   deleteCompany, branches, branchTelegrams,
   saveBranchTelegram, deleteBranchTelegram, testBranchTelegram
 }) {
@@ -299,6 +334,9 @@ export default function ProfilePage({
           </button>
         </div>
       </div>
+
+      {/* ── Password change ─── */}
+      {changePassword && <PasswordSection changePassword={changePassword} />}
 
       {/* ── Global Telegram bot ─── */}
       {isAdmin && (

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib'
 import {
@@ -339,6 +339,38 @@ export default function useAppData() {
       await Promise.all([loadUsersAndAccess(), loadOperations(), loadOrders(), loadCashRows(), loadMessages(), loadPayrollData()])
     } finally { setLoading(false) }
   }, [loadUsersAndAccess, loadOperations, loadOrders, loadCashRows, loadMessages, loadPayrollData])
+
+  // ── Push notifications ───────────────────────────────────────────────────
+  const [pushGranted, setPushGranted] = useState(() => Notification?.permission === 'granted')
+  const [pushDismissed, setPushDismissed] = useState(() => !!localStorage.getItem('finance_push_dismissed'))
+
+  const requestPush = useCallback(async () => {
+    if (!('Notification' in window)) return
+    const result = await Notification.requestPermission()
+    setPushGranted(result === 'granted')
+    if (result !== 'granted') { localStorage.setItem('finance_push_dismissed', '1'); setPushDismissed(true) }
+  }, [])
+
+  const dismissPush = useCallback(() => {
+    localStorage.setItem('finance_push_dismissed', '1'); setPushDismissed(true)
+  }, [])
+
+  const showPushNotification = useCallback((title, body) => {
+    if (Notification?.permission === 'granted') {
+      new Notification(title, { body, icon: '/favicon.svg' })
+    }
+  }, [])
+
+  // Send push for new messages when tab is not focused
+  const prevMsgCountRef = useRef(0)
+  useEffect(() => {
+    if (!user?.id) return
+    const mine = messages.filter(m => m.receiver_id === user.id && !m.is_read).length
+    if (mine > prevMsgCountRef.current && document.hidden) {
+      showPushNotification('Yangi xabar', `${mine} ta o'qilmagan xabar`)
+    }
+    prevMsgCountRef.current = mine
+  }, [messages, user?.id, showPushNotification])
 
   // ── Effects ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1005,6 +1037,16 @@ export default function useAppData() {
   }, [payroll, tr, calcPayrollRow])
 
   // ── Profile ───────────────────────────────────────────────────────────────
+  const changePassword = useCallback(async (oldPass, newPass) => {
+    if (!oldPass || !newPass) return notify('Parollarni to\'ldiring')
+    if (newPass.length < 4)   return notify('Yangi parol kamida 4 ta belgidan iborat bo\'lsin')
+    const { data: u } = await supabase.from('users').select('password').eq('id', user.id).single()
+    if (u?.password && u.password !== oldPass) return notify('Eski parol noto\'g\'ri')
+    const { error } = await supabase.from('users').update({ password: newPass }).eq('id', user.id)
+    if (error) return notify(error.message)
+    notify('Parol muvaffaqiyatli o\'zgartirildi')
+  }, [user, notify])
+
   const saveProfile = useCallback(async () => {
     const payload = { ...profile, language: lang, theme }
     const { error } = await supabase.from('users').update(payload).eq('id', user.id)
@@ -1033,14 +1075,49 @@ export default function useAppData() {
   }, [user, loadUsersAndAccess, notify])
 
   // ── Chat ──────────────────────────────────────────────────────────────────
+  const [replyTo, setReplyTo] = useState(null)   // { id, message, sender_id }
+  const [typingUsers, setTypingUsers] = useState([])
+
   const sendMessage = useCallback(async () => {
     if (!chatUser || !chatText.trim()) return
+    const msgText = replyTo
+      ? `[reply:${replyTo.id}:${replyTo.message?.slice(0,40)}]:${chatText.trim()}`
+      : chatText.trim()
     const { error } = await supabase.from('messages').insert({
-      sender_id: user.id, receiver_id: chatUser, message: chatText.trim(), is_read: false
+      sender_id: user.id, receiver_id: chatUser, message: msgText, is_read: false
     })
     if (error) return notify(error.message)
-    setChatText(''); await loadMessages()
-  }, [chatUser, chatText, user, loadMessages, notify])
+    setChatText(''); setReplyTo(null); await loadMessages()
+  }, [chatUser, chatText, replyTo, user, loadMessages, notify])
+
+  const deleteMessage = useCallback(async (msgId) => {
+    await supabase.from('messages').delete().eq('id', msgId)
+    await loadMessages()
+  }, [loadMessages])
+
+  // Typing broadcast via Supabase presence
+  const typingChannelRef = useRef(null)
+  useEffect(() => {
+    if (!user?.id) return
+    const ch = supabase.channel(`typing-${user.id}`)
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        setTypingUsers(prev => {
+          const filtered = prev.filter(x => x.id !== payload.id)
+          return payload.typing ? [...filtered, payload] : filtered
+        })
+        // Auto-clear after 4s
+        setTimeout(() => setTypingUsers(prev => prev.filter(x => x.id !== payload.id)), 4000)
+      })
+      .subscribe()
+    typingChannelRef.current = ch
+    return () => supabase.removeChannel(ch)
+  }, [user?.id])
+
+  const broadcastTyping = useCallback(async (isTyping) => {
+    if (!chatUser || !user?.id) return
+    const ch = supabase.channel(`typing-${chatUser}`)
+    await ch.send({ type:'broadcast', event:'typing', payload:{ id: user.id, typing: isTyping } })
+  }, [chatUser, user?.id])
 
   const sendMediaMessage = useCallback(async (file) => {
     if (!chatUser || !file) return
@@ -1412,6 +1489,7 @@ export default function useAppData() {
     cashDateFilter, setCashDateFilter, editEmployee, setEditEmployee,
     employeeEditForm, setEmployeeEditForm,
     // computed
+    pushGranted, pushDismissed, requestPush, dismissPush,
     tr, isAdmin, loginReady, unreadCount, allowedBranches, selectedBranchIds,
     notifications, notificationKey, notificationCount,
     visibleOps, visibleOrders, visibleCash, visibleCashFiltered,
@@ -1428,7 +1506,8 @@ export default function useAppData() {
     saveBranch, toggleBranch, deleteBranch,
     saveEmployee, deleteEmployee, updateEmployee,
     savePayroll, exportPayrollCurrent,
-    saveProfile, uploadAvatar, sendMessage, sendMediaMessage, markChatRead, markAllRead,
+    replyTo, setReplyTo, typingUsers, deleteMessage, broadcastTyping,
+    saveProfile, changePassword, uploadAvatar, sendMessage, sendMediaMessage, markChatRead, markAllRead,
     saveCompanySettings, testTelegram, deleteTelegramSettings,
     saveBranchTelegram, deleteBranchTelegram, testBranchTelegram,
     exportAllData, importOperationsCSV, importOrdersCSV,

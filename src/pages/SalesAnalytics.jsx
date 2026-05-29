@@ -184,7 +184,7 @@ export default function SalesAnalytics({ tr, data, orders, selectedBranchIds }) 
         <Chart title={tr.branchSales} rows={data.branchRows} emptyText={tr.noData} />
       </div>
       {data.methodRows.length > 0 && (
-        <Chart title="To'lov usullari" rows={data.methodRows} emptyText={tr.noData} />
+        <Chart title="To'lov usullari" rows={data.methodRows} emptyText={tr.noData} type="donut" />
       )}
     </div>
   )

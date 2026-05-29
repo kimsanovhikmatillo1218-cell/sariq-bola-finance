@@ -594,8 +594,7 @@ body.dark .panel h2, body.dark .panelTitle {
 /* ════════════════════════════════════════════════════════════════════
    CHART
 ════════════════════════════════════════════════════════════════════ */
-.chartBox { margin:4px 0 8px; }
-.chartBox h3 { font-size:14px; font-weight:800; margin-bottom:10px; letter-spacing:-.025em; }
+/* chartBox styles moved to CHART UPGRADES section below */
 
 .chartRow {
   display:grid; grid-template-columns:185px 1fr 150px;
@@ -1603,6 +1602,194 @@ body.dark * { scrollbar-color:rgba(255,255,255,.10) transparent; }
 .cropHint { font-size:11.5px; color:var(--muted); text-align:center; font-weight:600; opacity:.75; margin:0; }
 .cropActions { display:flex; gap:10px; width:100%; justify-content:center; }
 
+/* ════════════════════════════════════════════════════════════════════
+   SKELETON LOADING
+════════════════════════════════════════════════════════════════════ */
+@keyframes skeletonShimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeletonBlock {
+  display:block;
+  background:linear-gradient(90deg, var(--card2) 25%, var(--card3) 50%, var(--card2) 75%);
+  background-size: 800px 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+.skeletonCard {
+  display:flex; align-items:center; gap:14px;
+  background:var(--card); border:1.5px solid var(--line);
+  border-radius:var(--radius); padding:18px 20px;
+  box-shadow:var(--shadow);
+}
+.skeletonChartBox {
+  background:var(--card); border:1.5px solid var(--line);
+  border-radius:var(--radius); padding:20px;
+  box-shadow:var(--shadow);
+}
+.skeletonRow td { padding:13px 16px !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   CHART UPGRADES — Line, Donut
+════════════════════════════════════════════════════════════════════ */
+.chartBox { background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); }
+.chartTitle { font-size:14px; font-weight:800; margin-bottom:14px; letter-spacing:-.025em; }
+.chartBars {}
+
+/* Line chart */
+.lineChartWrap  { position:relative; width:100%; }
+.lineChartSvg   { width:100%; height:auto; display:block; overflow:visible; }
+.lineChartLabels {
+  position:relative; height:20px; margin-top:2px;
+}
+.lineChartLabels span {
+  position:absolute; font-size:10.5px; font-weight:700;
+  color:var(--muted); white-space:nowrap;
+}
+.lineChartTooltip {
+  position:absolute; z-index:10;
+  background:var(--text); color:var(--bg);
+  border-radius:9px; padding:6px 10px;
+  pointer-events:none; white-space:nowrap;
+}
+.lineChartTooltip b    { display:block; font-size:11px; opacity:.7; font-weight:700; }
+.lineChartTooltip span { display:block; font-size:13px; font-weight:900; }
+
+/* Donut chart */
+.donutWrap   { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+.donutSvg    { }
+.donutLegend { display:flex; flex-direction:column; gap:7px; flex:1; min-width:140px; }
+.donutLegendItem {
+  display:flex; align-items:center; gap:8px;
+  padding:5px 8px; border-radius:9px;
+  cursor:pointer; transition:background var(--transition);
+}
+.donutLegendItem.hovered { background:var(--card2); }
+.donutDot  { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.donutName { font-size:12px; font-weight:700; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.donutVal  { font-size:12px; font-weight:800; color:var(--text); }
+.donutPct  { font-size:11px; color:var(--muted); font-weight:700; min-width:38px; text-align:right; }
+
+/* ════════════════════════════════════════════════════════════════════
+   TABLE ENHANCEMENTS — sort, search, footer
+════════════════════════════════════════════════════════════════════ */
+th.sortable {
+  cursor:pointer; user-select:none;
+  transition:color var(--transition), background var(--transition);
+}
+th.sortable:hover { color:var(--yellow); background:rgba(250,189,0,.06); }
+
+.tableSearchBox {
+  display:flex; align-items:center; gap:7px;
+  background:var(--card2); border:1.5px solid var(--line);
+  border-radius:12px; padding:7px 12px;
+  transition:border-color var(--transition), box-shadow var(--transition);
+  margin-left:auto;
+}
+.tableSearchBox:focus-within { border-color:var(--yellow); box-shadow:var(--glow); }
+.tableSearchBox svg { color:var(--muted); flex-shrink:0; }
+.tableSearchBox input {
+  border:none; background:transparent; outline:none;
+  font-size:13px; font-weight:600; color:var(--text);
+  width:150px;
+}
+.tableSearchClear {
+  background:none; border:none; color:var(--muted); cursor:pointer;
+  padding:0; display:flex; align-items:center;
+  transition:color var(--transition);
+}
+.tableSearchClear:hover { color:var(--red); }
+
+.tableFooter {
+  display:flex; justify-content:flex-end;
+  font-size:12px; font-weight:700; color:var(--muted);
+  padding:8px 4px 0;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PAGE TRANSITION
+════════════════════════════════════════════════════════════════════ */
+.pageContent {
+  animation: pageEnter .22s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes pageEnter {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   CHAT REPLY / MESSAGE ACTIONS
+════════════════════════════════════════════════════════════════════ */
+.chatBubble { position:relative; }
+.chatBubble:hover .msgActions { opacity:1; pointer-events:auto; }
+.msgActions {
+  position:absolute; top:-28px;
+  display:flex; gap:4px; opacity:0; pointer-events:none;
+  transition:opacity .15s ease;
+  z-index:5;
+}
+.chatBubble.mine   .msgActions { right:0; }
+.chatBubble.theirs .msgActions { left:0; }
+.msgActionBtn {
+  width:26px; height:26px; border-radius:50%;
+  border:1px solid var(--line); background:var(--card);
+  color:var(--muted); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+  transition:all var(--transition);
+}
+.msgActionBtn:hover { background:var(--card2); color:var(--text); border-color:rgba(250,189,0,.35); }
+.msgActionBtn.del:hover { background:var(--red2); color:var(--red); border-color:var(--red); }
+
+.replyPreview {
+  background:rgba(250,189,0,.08); border-left:3px solid var(--yellow);
+  border-radius:0 8px 8px 0; padding:6px 10px; margin-bottom:6px;
+  font-size:11.5px; color:var(--muted); font-weight:600;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.replyPreviewBar {
+  display:flex; align-items:center; gap:8px;
+  background:var(--card2); border-top:1px solid var(--line);
+  padding:8px 14px; font-size:12px; font-weight:700;
+}
+.replyPreviewBar span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); }
+.replyPreviewBar b    { color:var(--yellow); }
+.replyDismiss { background:none; border:none; cursor:pointer; color:var(--muted); padding:0; display:flex; align-items:center; }
+.replyDismiss:hover { color:var(--red); }
+
+/* Typing indicator */
+.typingIndicator {
+  align-self:flex-start; padding:10px 14px;
+  background:var(--card); border:1px solid var(--line);
+  border-radius:16px 16px 16px 4px;
+  display:flex; gap:4px; align-items:center;
+}
+.typingDot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--muted); opacity:.5;
+  animation:typingBounce .9s ease-in-out infinite;
+}
+.typingDot:nth-child(2) { animation-delay:.18s; }
+.typingDot:nth-child(3) { animation-delay:.36s; }
+@keyframes typingBounce {
+  0%,80%,100% { transform:translateY(0); opacity:.35; }
+  40%         { transform:translateY(-6px); opacity:1; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PUSH NOTIFICATION PERMISSION BANNER
+════════════════════════════════════════════════════════════════════ */
+.pushBanner {
+  display:flex; align-items:center; gap:12px;
+  background:linear-gradient(135deg,rgba(250,189,0,.12),rgba(250,189,0,.05));
+  border:1.5px solid rgba(250,189,0,.3); border-radius:14px;
+  padding:12px 16px; margin-bottom:16px;
+  animation:slideDown .25s ease;
+}
+.pushBanner svg { color:var(--yellow); flex-shrink:0; }
+.pushBanner span { flex:1; font-size:13px; font-weight:700; color:var(--text); }
+.pushBanner button { flex-shrink:0; }
+
 /* ── Chart fill — animated shimmer ── */
 .chartFill::before {
   content:""; position:absolute; top:0; left:-60px; bottom:0; width:60px;
@@ -2147,6 +2334,12 @@ body.dark .compareToggleBtn    { background:rgba(255,255,255,.05); }
   .rankingItem strong { grid-column:2; }
   .profileSection { flex-direction:column; }
   .cashDiffBox > div { padding:11px 13px; }
+
+  /* Table search on mobile */
+  .tableSearchBox { margin-left:0; width:100%; }
+  .tableSearchBox input { width:100%; }
+  .reportActions { flex-wrap:wrap; }
+  .pushBanner { flex-wrap:wrap; gap:8px; }
 
   /* Dashboard mobile */
   .dashKpiGrid        { grid-template-columns:1fr 1fr; gap:10px; }
