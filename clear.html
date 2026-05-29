@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sariq Bola — Yangilanmoqda...</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg,#0f1117 0%,#1a1f2e 100%);
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      color:#fff; text-align:center; padding:24px;
+    }
+    .card {
+      background:rgba(255,255,255,.05);
+      border:1.5px solid rgba(250,189,0,.25);
+      border-radius:24px; padding:48px 40px;
+      max-width:420px; width:100%;
+    }
+    .logo {
+      width:72px; height:72px; border-radius:20px;
+      background:linear-gradient(135deg,#fabd00,#f59e0b);
+      display:flex; align-items:center; justify-content:center;
+      font-size:36px; margin:0 auto 24px;
+    }
+    h1 { font-size:22px; font-weight:900; margin-bottom:10px; color:#fabd00; }
+    p  { font-size:14px; color:rgba(255,255,255,.55); margin-bottom:28px; line-height:1.6; }
+    .spinner {
+      width:48px; height:48px; border-radius:50%;
+      border:3px solid rgba(250,189,0,.2);
+      border-top-color:#fabd00;
+      animation:spin .7s linear infinite;
+      margin:0 auto 24px;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .status { font-size:13px; color:rgba(255,255,255,.4); margin-top:16px; }
+    .btn {
+      display:inline-block; padding:14px 32px;
+      background:linear-gradient(135deg,#fabd00,#f59e0b);
+      color:#191c1e; border-radius:14px; font-weight:900;
+      font-size:15px; text-decoration:none; border:none; cursor:pointer;
+      margin-top:20px;
+    }
+    .btn:hover { opacity:.9; }
+    #msg { display:none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🍕</div>
+    <div id="loading">
+      <h1>Tizim yangilanmoqda</h1>
+      <p>Kesh va eski ma'lumotlar tozalanmoqda...<br/>Bir necha soniya kuting.</p>
+      <div class="spinner"></div>
+      <div class="status" id="statusText">Eski kesh tekshirilmoqda...</div>
+    </div>
+    <div id="msg">
+      <h1>✅ Tayyor!</h1>
+      <p>Kesh muvaffaqiyatli tozalandi.<br/>Ilovaga o'tishingiz mumkin.</p>
+      <a class="btn" href="/sariq-bola-finance/">Ilovani ochish →</a>
+    </div>
+  </div>
+
+  <script>
+    const status = document.getElementById('statusText')
+    const loading = document.getElementById('loading')
+    const msg = document.getElementById('msg')
+
+    async function clearEverything() {
+      try {
+        // 1. Unregister all service workers
+        status.textContent = 'Service Worker o\'chirilmoqda...'
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations()
+          await Promise.all(regs.map(r => r.unregister()))
+        }
+
+        // 2. Clear all caches
+        status.textContent = 'Kesh tozalanmoqda...'
+        if ('caches' in window) {
+          const keys = await caches.keys()
+          await Promise.all(keys.map(k => caches.delete(k)))
+        }
+
+        // 3. Clear localStorage & sessionStorage (optional — comment out if you want to keep login)
+        // localStorage.clear()
+        // sessionStorage.clear()
+
+        status.textContent = 'Hammasi tayyor!'
+        await new Promise(r => setTimeout(r, 600))
+
+        loading.style.display = 'none'
+        msg.style.display = 'block'
+
+        // Auto redirect after 1.5s
+        setTimeout(() => {
+          window.location.href = '/sariq-bola-finance/'
+        }, 1500)
+
+      } catch(e) {
+        status.textContent = 'Xatolik: ' + e.message
+        loading.style.display = 'none'
+        msg.innerHTML = `
+          <h1>⚠️ Xatolik</h1>
+          <p>Qo'lda brauzer keshini tozalang:<br/>
+          <b>Ctrl+Shift+Delete</b> (Windows)<br/>
+          <b>Cmd+Shift+Delete</b> (Mac)</p>
+          <a class="btn" href="/sariq-bola-finance/">Baribir ochish →</a>
+        `
+        msg.style.display = 'block'
+      }
+    }
+
+    clearEverything()
+  </script>
+</body>
+</html>
