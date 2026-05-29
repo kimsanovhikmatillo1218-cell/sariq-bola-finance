@@ -29,10 +29,20 @@ export default function TopBar({
       </div>
       <div className="topActions">
         {PERIOD_PAGES.includes(page) && (
-          <>
+          <div className="periodPicker">
+            <div className="periodQuick">
+              {[
+                { label: 'Bugun',    fn: () => { const t = new Date().toISOString().slice(0,10); setPeriod({ start: t, end: t }) } },
+                { label: 'Bu oy',    fn: () => { const n=new Date(); const s=new Date(n.getFullYear(),n.getMonth(),1).toISOString().slice(0,10); setPeriod({ start: s, end: new Date().toISOString().slice(0,10) }) } },
+                { label: '7 kun',    fn: () => { const t=new Date(); const s=new Date(t-6*86400000).toISOString().slice(0,10); setPeriod({ start: s, end: new Date().toISOString().slice(0,10) }) } },
+                { label: '30 kun',   fn: () => { const t=new Date(); const s=new Date(t-29*86400000).toISOString().slice(0,10); setPeriod({ start: s, end: new Date().toISOString().slice(0,10) }) } },
+              ].map(q => (
+                <button key={q.label} className="periodQuickBtn" onClick={q.fn}>{q.label}</button>
+              ))}
+            </div>
             <input type="date" value={period.start} onChange={e => setPeriod({ ...period, start: e.target.value })} />
             <input type="date" value={period.end}   onChange={e => setPeriod({ ...period, end: e.target.value })} />
-          </>
+          </div>
         )}
 
         {/* Language selector */}

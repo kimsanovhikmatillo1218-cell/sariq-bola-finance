@@ -1,5 +1,5 @@
 export const BASE         = import.meta.env.VITE_SUPABASE_URL
-export const LOGO         = '/icons.svg'
+export const LOGO         = '/sariq-bola-finance/logo.jpg'
 export const BRANCH_ORDER = ['PROSPEKT','MAKRO',"QO'QON",'ANDIJON']
 export const ACCOUNTS     = ['Naqd','Hisob raqam']
 export const OP_TYPE      = { INCOME:'Kirim', EXPENSE:'Chiqim' }
@@ -8,7 +8,7 @@ export const SALARY_T     = { HOURLY:'hourly', MONTHLY:'monthly' }
 export const TG_FN        = 'send-telegram'
 export const SIGN_IN_RPC  = 'sign_in'
 export const HASH_RPC     = 'hash_password'
-export const PERIOD_PAGES = ['orderReports','history','reports','cash','payroll','payrollArchive']
+export const PERIOD_PAGES = ['dashboard','salesAnalytics','orderReports','history','reports','cash','payroll','payrollArchive']
 
 export const MODULES = [
   'dashboard','salesAnalytics',

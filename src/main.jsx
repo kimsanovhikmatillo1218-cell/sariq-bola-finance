@@ -43,7 +43,12 @@ class ErrorBoundary extends Component {
   }
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+// HMR-safe: reuse existing root if present (prevents "createRoot on same container" warning)
+const container = document.getElementById('root')
+if (!container._sbRoot) {
+  container._sbRoot = ReactDOM.createRoot(container)
+}
+container._sbRoot.render(
   <ErrorBoundary>
     <App />
   </ErrorBoundary>
