@@ -1,4 +1,4 @@
-const CACHE_VER = 'sb-finance-v6'
+const CACHE_VER = 'sb-finance-v7'
 const BASE      = '/sariq-bola-finance'
 
 self.addEventListener('install', e => {
@@ -6,39 +6,47 @@ self.addEventListener('install', e => {
 })
 
 self.addEventListener('activate', e => {
-  // Delete ALL old caches on every activate so stale JS/CSS never gets served
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_VER).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))  // delete ALL caches
+      .then(() => self.clients.claim())
+      .then(() => {
+        // Tell every open tab to reload so it gets the fresh bundle
+        return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+          .then(clients => clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' })))
+      })
   )
 })
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return
-  // Never cache Supabase API calls
   if (e.request.url.includes('supabase')) return
 
-  // Navigation requests: network first, fallback to cached index
+  // Navigation: always try network first, fallback to cached index.html
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request).catch(() => caches.match(BASE + '/index.html'))
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone()
+          caches.open(CACHE_VER).then(c => c.put(e.request, clone))
+          return res
+        })
+        .catch(() => caches.match(BASE + '/index.html'))
     )
     return
   }
 
-  // Static assets: cache first
+  // Static assets: network first so updates are instant, cache as fallback
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const networkFetch = fetch(e.request).then(res => {
+    fetch(e.request)
+      .then(res => {
         if (res.ok) {
           const clone = res.clone()
           caches.open(CACHE_VER).then(c => c.put(e.request, clone))
         }
         return res
       })
-      return cached || networkFetch
-    })
+      .catch(() => caches.match(e.request))
   )
 })
 

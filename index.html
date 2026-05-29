@@ -13,18 +13,25 @@
     <link rel="apple-touch-icon" href="/sariq-bola-finance/favicon.svg" />
     <link rel="manifest" href="/sariq-bola-finance/manifest.json" />
     <title>Sariq Bola Finance</title>
-    <script type="module" crossorigin src="/sariq-bola-finance/assets/index-BNXaBBdW.js"></script>
+    <script type="module" crossorigin src="/sariq-bola-finance/assets/index-CP_imHMr.js"></script>
     <link rel="stylesheet" crossorigin href="/sariq-bola-finance/assets/index-Bb_Lkb-p.css">
   </head>
   <body>
     <div id="root"></div>
     <script>
       if ('serviceWorker' in navigator) {
+        // Auto-reload when a new SW takes over (clears stale cache on phone/tablet)
+        navigator.serviceWorker.addEventListener('message', e => {
+          if (e.data && e.data.type === 'SW_UPDATED') {
+            window.location.reload()
+          }
+        })
+        // Also reload on controllerchange (new SW claimed this page)
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload()
+        })
+
         window.addEventListener('load', () => {
-          // Unregister ALL old service workers first, then register fresh
-          navigator.serviceWorker.getRegistrations().then(regs => {
-            regs.forEach(r => r.unregister())
-          })
           navigator.serviceWorker.register('/sariq-bola-finance/sw.js', {
             scope: '/sariq-bola-finance/'
           }).catch(() => {})
