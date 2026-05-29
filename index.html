@@ -1,14 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="uz">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <meta name="theme-color" content="#fabd00" />
+    <meta name="description" content="Sariq Bola Pizza moliyaviy boshqaruv tizimi" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SB Finance" />
     <link rel="icon" type="image/svg+xml" href="/sariq-bola-finance/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>sariq-bola-finance</title>
-    <script type="module" crossorigin src="/sariq-bola-finance/assets/index-DNbev_6K.js"></script>
-    <link rel="stylesheet" crossorigin href="/sariq-bola-finance/assets/index-DW28M6yG.css">
+    <link rel="apple-touch-icon" href="/sariq-bola-finance/favicon.svg" />
+    <link rel="manifest" href="/sariq-bola-finance/manifest.json" />
+    <title>Sariq Bola Finance</title>
+    <script type="module" crossorigin src="/sariq-bola-finance/assets/index-CMeFS4a5.js"></script>
+    <link rel="stylesheet" crossorigin href="/sariq-bola-finance/assets/index-C-Nbt4ak.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {})
+        })
+      }
+    </script>
   </body>
 </html>
