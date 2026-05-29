@@ -457,24 +457,28 @@ export default function useAppData() {
 
   useEffect(() => {
     if (!user) return
-    // Use unique name per mount to avoid HMR "already subscribed" errors
-    const chName = `finance-rt-${Date.now()}`
-    const ch = supabase.channel(chName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, loadUsersAndAccess)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_branches' }, loadUsersAndAccess)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'permissions' }, loadUsersAndAccess)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'branches' }, loadBase)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadBase)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'operations' }, loadOperations)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'shift_orders' }, loadOrders)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cash_collection' }, loadCashRows)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, loadPayrollData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_runs' }, loadPayrollData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_items' }, loadPayrollData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'company_settings' }, loadBase)
-      .subscribe()
-    return () => supabase.removeChannel(ch)
+    let ch = null
+    try {
+      // Unique name per mount — prevents "already subscribed" if effect re-runs
+      ch = supabase.channel(`finance-rt-${Date.now()}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, loadUsersAndAccess)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_branches' }, loadUsersAndAccess)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'permissions' }, loadUsersAndAccess)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'branches' }, loadBase)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadBase)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'operations' }, loadOperations)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'shift_orders' }, loadOrders)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'cash_collection' }, loadCashRows)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, loadPayrollData)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_runs' }, loadPayrollData)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll_items' }, loadPayrollData)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'company_settings' }, loadBase)
+        .subscribe()
+    } catch (e) {
+      console.warn('Realtime channel setup failed (will retry):', e?.message)
+    }
+    return () => { if (ch) supabase.removeChannel(ch) }
   }, [user, loadMessages, loadUsersAndAccess, loadOperations, loadOrders, loadCashRows, loadPayrollData, loadBase])
 
   useEffect(() => {

@@ -19,11 +19,18 @@
     <script type="module" src="/src/main.jsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
+        // Auto-reload when a new SW takes over (clears stale cache on phone/tablet)
+        navigator.serviceWorker.addEventListener('message', e => {
+          if (e.data && e.data.type === 'SW_UPDATED') {
+            window.location.reload()
+          }
+        })
+        // Also reload on controllerchange (new SW claimed this page)
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload()
+        })
+
         window.addEventListener('load', () => {
-          // Unregister ALL old service workers first, then register fresh
-          navigator.serviceWorker.getRegistrations().then(regs => {
-            regs.forEach(r => r.unregister())
-          })
           navigator.serviceWorker.register('/sariq-bola-finance/sw.js', {
             scope: '/sariq-bola-finance/'
           }).catch(() => {})
