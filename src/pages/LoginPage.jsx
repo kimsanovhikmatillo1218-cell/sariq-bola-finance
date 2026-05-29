@@ -130,7 +130,7 @@ export default function LoginPage({
   return (
     <div className="loginScreen">
       <AnimatedBg />
-      {toast && <div className="toast loginToast">{toast}</div>}
+      {toast && <div className="toast loginToast">{toast?.msg || (typeof toast === 'string' ? toast : '')}</div>}
 
       {/* Floating decorative orbs */}
       <div className="loginOrb loginOrb1" />

@@ -74,8 +74,7 @@ export default function Dashboard({ tr, stats, operations, selectedBranchIds, pe
   const [compareOpen, setCompareOpen] = useState(false)
   const [quickPeriod, setQuickPeriod] = useState(null)
 
-  if (loading && (!stats?.incomeRows?.length)) return <SkeletonDashboard />
-
+  // ── ALL hooks must come before any early return ────────────────────────
   // Compute current period totals from operations
   const periodTotals = useMemo(() => {
     if (!operations || !selectedBranchIds) return { income: 0, expense: 0 }
@@ -120,6 +119,9 @@ export default function Dashboard({ tr, stats, operations, selectedBranchIds, pe
       })
     return { income, expense, profit: income - expense }
   }, [operations, selectedBranchIds, period])
+
+  // ── Early return AFTER all hooks ───────────────────────────────────────
+  if (loading && (!stats?.incomeRows?.length)) return <SkeletonDashboard />
 
   return (
     <div className="dash">

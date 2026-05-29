@@ -54,7 +54,7 @@ export default function App() {
   const markAllRead = d.markAllRead
 
   return (
-    <div className={`app ${d.theme}`}>
+    <div className={`app ${d.theme}`} translate="no">
       <Toast message={d.toast?.msg || (typeof d.toast === 'string' ? d.toast : '')}
              type={d.toast?.type || 'success'}
              onClose={d.clearToast} />

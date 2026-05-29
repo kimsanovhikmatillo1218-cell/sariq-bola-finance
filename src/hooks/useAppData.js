@@ -457,7 +457,9 @@ export default function useAppData() {
 
   useEffect(() => {
     if (!user) return
-    const ch = supabase.channel('finance-rt')
+    // Use unique name per mount to avoid HMR "already subscribed" errors
+    const chName = `finance-rt-${Date.now()}`
+    const ch = supabase.channel(chName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, loadMessages)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, loadUsersAndAccess)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_branches' }, loadUsersAndAccess)
