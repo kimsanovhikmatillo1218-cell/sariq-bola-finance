@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Panel from '../components/ui/Panel'
 import { money, num } from '../utils'
+import { IconChevronDown } from '../components/ui/Icons'
 
 export default function PayrollArchive({ tr, runs, items }) {
   const [openRun, setOpenRun] = useState(null)
@@ -14,7 +15,12 @@ export default function PayrollArchive({ tr, runs, items }) {
             <div className="archiveRunHeader" onClick={() => setOpenRun(openRun === run.id ? null : run.id)}>
               <b>{run.title}</b>
               <span>{run.branches?.name} | {run.period_start} — {run.period_end}</span>
-              <span>{openRun === run.id ? '▲' : '▼'}</span>
+              <span style={{
+                display:'inline-flex', transition:'transform .25s',
+                transform: openRun === run.id ? 'rotate(180deg)' : 'rotate(0deg)'
+              }}>
+                <IconChevronDown size={16} />
+              </span>
             </div>
             {openRun === run.id && runItems.length > 0 && (
               <div className="tableWrap">

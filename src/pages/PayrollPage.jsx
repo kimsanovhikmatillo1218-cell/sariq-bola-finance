@@ -2,6 +2,7 @@ import Panel from '../components/ui/Panel'
 import Field from '../components/ui/Field'
 import Select from '../components/ui/Select'
 import { money } from '../utils'
+import { IconSave, IconDownload } from '../components/ui/Icons'
 
 export default function PayrollPage({ tr, payroll, setPayroll, calc, save, exportCSV }) {
   return (
@@ -13,8 +14,8 @@ export default function PayrollPage({ tr, payroll, setPayroll, calc, save, expor
         <Field type="date" label={tr.end}   value={payroll.period_end}   set={v => setPayroll({ ...payroll, period_end: v })} />
       </div>
       <div className="actions" style={{ marginBottom: 12 }}>
-        <button className="primary" onClick={save}>💾 {tr.save}</button>
-        <button className="secondary" onClick={exportCSV}>📊 {tr.exportExcel}</button>
+        <button className="primary" onClick={save} style={{ display:'flex', alignItems:'center', gap:6 }}><IconSave size={15} /> {tr.save}</button>
+        <button className="secondary" onClick={exportCSV} style={{ display:'flex', alignItems:'center', gap:6 }}><IconDownload size={15} /> {tr.exportExcel}</button>
       </div>
       {payroll.rows.length === 0 && <div className="empty">Xodim yo'q — avval filial tanlang</div>}
       {payroll.rows.length > 0 && (

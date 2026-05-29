@@ -1,7 +1,7 @@
 import { PERIOD_PAGES } from '../../constants'
 import {
   IconBell, IconSun, IconMoon, IconDatabase, IconRefresh,
-  IconX, IconChat, IconCash, IconClipboard, IconCheck
+  IconX, IconChat, IconCash, IconClipboard, IconCheck, IconSearch
 } from '../ui/Icons'
 
 const NOTIF_ICONS = {
@@ -19,7 +19,7 @@ export default function TopBar({
   page, tr, period, setPeriod, lang, setLang, theme, setTheme,
   isAdmin, notifications, notificationCount, notificationKey,
   showNotifications, openNotifications, changePage, markAllRead,
-  setNotificationsSeenKey, exportAllData, loadAll
+  setNotificationsSeenKey, exportAllData, loadAll, onOpenSearch
 }) {
   return (
     <header className="topbar entrance">
@@ -119,6 +119,14 @@ export default function TopBar({
           <button className="secondary backupBtn" onClick={exportAllData} title="Backup">
             <IconDatabase size={16} />
             <span>Backup</span>
+          </button>
+        )}
+
+        {/* Search / Command palette */}
+        {onOpenSearch && (
+          <button className="secondary cmdTrigger" onClick={onOpenSearch} title="Sahifa qidirish (Ctrl+K)">
+            <IconSearch size={15} />
+            <span className="cmdTriggerHint">Ctrl+K</span>
           </button>
         )}
 

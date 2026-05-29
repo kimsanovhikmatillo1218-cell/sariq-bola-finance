@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Panel from '../components/ui/Panel'
 import Field from '../components/ui/Field'
+import { IconPlus, IconSave, IconX, IconEdit, IconTrash, IconInfo, IconKey } from '../components/ui/Icons'
 
 export default function BranchesPage({ tr, branches, saveBranch, deleteBranch, toggleBranch }) {
   const [form, setForm]     = useState({ name: '', code: '', sort_order: '' })
@@ -25,7 +26,7 @@ export default function BranchesPage({ tr, branches, saveBranch, deleteBranch, t
   }
 
   return (
-    <Panel title="🏪 Filiallar">
+    <Panel title="Filiallar">
       {/* Form */}
       <div className="grid" style={{ gridTemplateColumns: 'repeat(3,1fr) auto', alignItems: 'end', gap: 12 }}>
         <Field
@@ -50,11 +51,16 @@ export default function BranchesPage({ tr, branches, saveBranch, deleteBranch, t
         <div className="field">
           <label>&nbsp;</label>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="primary" onClick={handleSave}>
-              {editId ? '💾 Saqlash' : '➕ Qo\'shish'}
+            <button className="primary" onClick={handleSave} style={{ display:'flex', alignItems:'center', gap:6 }}>
+              {editId
+                ? <><IconSave size={15} /> Saqlash</>
+                : <><IconPlus size={15} /> Qo'shish</>
+              }
             </button>
             {editId && (
-              <button className="secondary" onClick={cancel}>✕ Bekor</button>
+              <button className="secondary" onClick={cancel} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <IconX size={14} /> Bekor
+              </button>
             )}
           </div>
         </div>
@@ -85,21 +91,35 @@ export default function BranchesPage({ tr, branches, saveBranch, deleteBranch, t
               <tr key={b.id} className={editId === b.id ? 'selectedRow' : ''}>
                 <td>{i + 1}</td>
                 <td><b>{b.name}</b></td>
-                <td><code style={{ background: 'var(--card2)', padding: '2px 8px', borderRadius: 6, fontSize: 13, borderRadius: 8, border: '1px solid var(--line)', fontFamily: 'monospace', fontWeight: 700 }}>{b.code}</code></td>
+                <td>
+                  <code style={{
+                    background: 'var(--card2)', padding: '2px 8px', borderRadius: 8,
+                    fontSize: 13, border: '1px solid var(--line)', fontFamily: 'monospace', fontWeight: 700
+                  }}>{b.code}</code>
+                </td>
                 <td>{b.sort_order ?? '—'}</td>
                 <td>
                   <span
                     className={`typeBadge ${b.active ? 'income' : 'outcome'}`}
-                    style={{ cursor: 'pointer' }}
+                    style={{ cursor: 'pointer', display:'inline-flex', alignItems:'center', gap:5 }}
                     onClick={() => toggleBranch(b)}
                     title="Holat o'zgartirish uchun bosing"
                   >
-                    {b.active ? '✅ Faol' : '⛔ Nofaol'}
+                    <span style={{
+                      width: 7, height: 7, borderRadius: '50%',
+                      background: b.active ? '#22c55e' : '#ef4444',
+                      display: 'inline-block', flexShrink: 0
+                    }} />
+                    {b.active ? 'Faol' : 'Nofaol'}
                   </span>
                 </td>
                 <td>
-                  <button onClick={() => startEdit(b)} title="Tahrirlash">✏️</button>
-                  <button onClick={() => deleteBranch(b)} title="O'chirish" style={{ marginLeft: 4 }}>🗑</button>
+                  <button className="iconActionBtn" onClick={() => startEdit(b)} title="Tahrirlash">
+                    <IconEdit size={15} />
+                  </button>
+                  <button className="iconActionBtn danger" onClick={() => deleteBranch(b)} title="O'chirish" style={{ marginLeft: 4 }}>
+                    <IconTrash size={15} />
+                  </button>
                 </td>
               </tr>
             ))}
@@ -110,11 +130,18 @@ export default function BranchesPage({ tr, branches, saveBranch, deleteBranch, t
       {/* Info box */}
       <div style={{
         marginTop: 16, padding: '12px 16px', borderRadius: 14,
-        background: 'var(--card2)', border: '1px solid var(--line)', color: 'var(--muted)', fontSize: 13, lineHeight: 1.7
+        background: 'var(--card2)', border: '1px solid var(--line)',
+        color: 'var(--muted)', fontSize: 13, lineHeight: 1.7,
+        display: 'flex', flexDirection: 'column', gap: 4
       }}>
-        💡 <b>Eslatma:</b> Filial nofaol qilinsa, tizimda ko'rinmaydi, lekin ma'lumotlari saqlanib qoladi.
-        <br />
-        🔑 <b>Kod</b> — buyurtma va hisobotlarda filiallarni aniqlash uchun. Katta harflarda yozing (PROSPEKT, MAKRO...).
+        <span style={{ display:'flex', alignItems:'center', gap:7 }}>
+          <IconInfo size={14} style={{ color:'var(--accent)', flexShrink:0 }} />
+          <span><b>Eslatma:</b> Filial nofaol qilinsa, tizimda ko'rinmaydi, lekin ma'lumotlari saqlanib qoladi.</span>
+        </span>
+        <span style={{ display:'flex', alignItems:'center', gap:7 }}>
+          <IconKey size={14} style={{ color:'var(--accent)', flexShrink:0 }} />
+          <span><b>Kod</b> — buyurtma va hisobotlarda filiallarni aniqlash uchun. Katta harflarda yozing (PROSPEKT, MAKRO...).</span>
+        </span>
       </div>
     </Panel>
   )

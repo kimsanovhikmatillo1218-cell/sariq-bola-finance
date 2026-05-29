@@ -1,16 +1,29 @@
+import { useState } from 'react'
 import Panel from '../components/ui/Panel'
 import Field from '../components/ui/Field'
 import Select from '../components/ui/Select'
 import { money, num, cashDifferenceText } from '../utils'
+import { IconSpinner, IconSave } from '../components/ui/Icons'
+
 const FIELDS = [
   ['total','total'],['uzcard','uzcard'],['humo','humo'],
   ['rahmat','rahmat'],['rxmt','rxmt'],['uzum','uzum'],
   ['yandex','yandex'],['expense','expense'],['gum_count','gum']
 ]
+
 export default function OrderPage({ tr, isAdmin, order, setOrder, calcCash, saveOrder, editOrder }) {
+  const [saving, setSaving] = useState(false)
+
   const expectedCash = calcCash()
   const actualCash   = String(order.cash_amount || '').trim() !== '' ? num(order.cash_amount) : expectedCash
   const cashDiff     = actualCash - expectedCash
+
+  const handleSave = async () => {
+    setSaving(true)
+    try { await saveOrder() }
+    finally { setSaving(false) }
+  }
+
   return (
     <Panel title={tr.order}>
       {isAdmin && <Field type="date" label={tr.date} value={order.date} set={v => setOrder({ ...order, date: v })} />}
@@ -29,7 +42,11 @@ export default function OrderPage({ tr, isAdmin, order, setOrder, calcCash, save
         </div>
       </div>
       <textarea placeholder={tr.note} value={order.note || ''} onChange={e => setOrder({ ...order, note: e.target.value })} />
-      <button className="primary" onClick={saveOrder}>{editOrder ? tr.edit : tr.save}</button>
+      <button className="primary" onClick={handleSave} disabled={saving}
+        style={{ display:'inline-flex', alignItems:'center', gap:7 }}>
+        {saving ? <IconSpinner size={15} /> : <IconSave size={15} />}
+        {saving ? 'Saqlanmoqda...' : (editOrder ? tr.edit : tr.save)}
+      </button>
     </Panel>
   )
 }

@@ -1,9 +1,12 @@
 import useAppData from './hooks/useAppData'
 import { isOnline } from './utils'
 import ConfirmModal    from './components/ui/ConfirmModal'
+import Toast           from './components/ui/Toast'
 import Sidebar         from './components/layout/Sidebar'
 import TopBar          from './components/layout/TopBar'
 import BranchSelector  from './components/layout/BranchSelector'
+import MobileBottomNav  from './components/layout/MobileBottomNav'
+import CommandPalette   from './components/ui/CommandPalette'
 import LoginPage       from './pages/LoginPage'
 import Dashboard       from './pages/Dashboard'
 import SalesAnalytics  from './pages/SalesAnalytics'
@@ -20,10 +23,24 @@ import BranchesPage    from './pages/BranchesPage'
 import UsersPage       from './pages/UsersPage'
 import ChatPage        from './pages/ChatPage'
 import ProfilePage     from './pages/ProfilePage'
+import { useState, useEffect } from 'react'
 import './index.css'
 
 export default function App() {
   const d = useAppData()
+  const [cmdOpen, setCmdOpen] = useState(false)
+
+  // Ctrl+K / Cmd+K global shortcut
+  useEffect(() => {
+    const handler = e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setCmdOpen(v => !v)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
 
   if (!d.user) {
     return <LoginPage
@@ -38,7 +55,9 @@ export default function App() {
 
   return (
     <div className={`app ${d.theme}`}>
-      {d.toast && <div className="toast">{d.toast}</div>}
+      <Toast message={d.toast?.msg || (typeof d.toast === 'string' ? d.toast : '')}
+             type={d.toast?.type || 'success'}
+             onClose={d.clearToast} />
       <ConfirmModal modal={d.confirmModal} close={d.closeConfirm} />
       {d.mobileMenu && <div className="sidebarOverlay" onClick={() => d.setMobileMenu(false)} />}
 
@@ -58,7 +77,8 @@ export default function App() {
           notificationKey={d.notificationKey} showNotifications={d.showNotifications}
           openNotifications={d.openNotifications} changePage={d.changePage}
           markAllRead={markAllRead} setNotificationsSeenKey={() => {}}
-          exportAllData={d.exportAllData} loadAll={d.loadAll} />
+          exportAllData={d.exportAllData} loadAll={d.loadAll}
+          onOpenSearch={() => setCmdOpen(true)} />
 
         {!['branches','categories','users','profile','chat'].includes(d.page) && (
           <BranchSelector allowedBranches={d.allowedBranches} branch={d.branch} setBranch={d.setBranch} tr={d.tr} />
@@ -207,6 +227,19 @@ export default function App() {
 
         </div>{/* end pageContent */}
       </main>
+
+      <MobileBottomNav
+        page={d.page}
+        changePage={d.changePage}
+        can={d.can}
+        unreadCount={d.unreadCount} />
+
+      <CommandPalette
+        open={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        changePage={p => { d.changePage(p); setCmdOpen(false) }}
+        can={d.can}
+        tr={d.tr} />
     </div>
   )
 }

@@ -3,7 +3,7 @@ import { avatarSrc } from '../../utils'
 import {
   IconHome, IconBarChart, IconClipboard, IconShoppingBag, IconArrowUpDown,
   IconHistory, IconFileText, IconCash, IconUsers, IconDollarSign,
-  IconArchive, IconTag, IconBranch, IconUserCog, IconChat, IconSettings
+  IconArchive, IconTag, IconBranch, IconUserCog, IconChat, IconSettings, IconX
 } from '../ui/Icons'
 
 const NAV_ICONS = {
@@ -37,7 +37,9 @@ const SECTIONS = [
 export default function Sidebar({ user, page, can, tr, unreadCount, changePage, logout, mobileMenu, setMobileMenu }) {
   return (
     <aside className={`sidebar ${mobileMenu ? 'open' : ''}`}>
-      <button className="closeMenuBtn" onClick={() => setMobileMenu(false)}>✕</button>
+      <button className="closeMenuBtn" onClick={() => setMobileMenu(false)} aria-label="Yopish">
+        <IconX size={16} />
+      </button>
 
       {/* ── Brand ── */}
       <div className="brand">

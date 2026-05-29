@@ -88,7 +88,17 @@ export default function useAppData() {
   const loginReady = loginVal.trim().length > 0 && password.trim().length > 0 && !loading
   const unreadCount = messages.filter(m => m.receiver_id === user?.id && !m.is_read).length
 
-  const notify      = useCallback(msg => { setToast(msg); setTimeout(() => setToast(''), 2600) }, [])
+  const notify      = useCallback((msg, type) => {
+    const autoType = type || (
+      /xato|error|wrong|failed|noto.g.ri|tanlang|kerak|required|adminOnly/i.test(msg)
+        ? 'error'
+        : /diqqat|ogohlantir|warning/i.test(msg) ? 'warning'
+        : 'success'
+    )
+    setToast({ msg, type: autoType, key: Date.now() })
+    setTimeout(() => setToast(null), 3200)
+  }, [])
+  const clearToast  = useCallback(() => setToast(null), [])
   const showConfirm = useCallback((message, onConfirm) => setConfirmModal({ open: true, message, onConfirm }), [])
   const closeConfirm = useCallback(() => setConfirmModal({ open: false, message: '', onConfirm: null }), [])
   const changePage  = useCallback(p => { setPage(p); localStorage.setItem('finance_page', p) }, [])
@@ -361,16 +371,41 @@ export default function useAppData() {
     }
   }, [])
 
+  // ── Notification sound (Web Audio API — no files needed) ─────────────────
+  const playNotificationSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const playTone = (freq, start, dur, vol = 0.18) => {
+        const osc  = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain); gain.connect(ctx.destination)
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start)
+        gain.gain.setValueAtTime(0, ctx.currentTime + start)
+        gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + start + 0.01)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur)
+        osc.start(ctx.currentTime + start)
+        osc.stop(ctx.currentTime + start + dur + 0.05)
+      }
+      playTone(880, 0,    0.12)
+      playTone(1100, 0.1, 0.14)
+      playTone(1320, 0.2, 0.18)
+    } catch { /* audio not supported */ }
+  }, [])
+
   // Send push for new messages when tab is not focused
   const prevMsgCountRef = useRef(0)
   useEffect(() => {
     if (!user?.id) return
     const mine = messages.filter(m => m.receiver_id === user.id && !m.is_read).length
-    if (mine > prevMsgCountRef.current && document.hidden) {
-      showPushNotification('Yangi xabar', `${mine} ta o'qilmagan xabar`)
+    if (mine > prevMsgCountRef.current) {
+      if (document.hidden) {
+        showPushNotification('Yangi xabar', `${mine} ta o'qilmagan xabar`)
+      }
+      playNotificationSound()
     }
     prevMsgCountRef.current = mine
-  }, [messages, user?.id, showPushNotification])
+  }, [messages, user?.id, showPushNotification, playNotificationSound])
 
   // ── Effects ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1473,7 +1508,7 @@ export default function useAppData() {
   return {
     // state
     user, page, loginVal, setLoginVal, password, setPassword, remember, setRemember,
-    showPass, setShowPass, loading, toast, mobileMenu, setMobileMenu,
+    showPass, setShowPass, loading, toast, clearToast, mobileMenu, setMobileMenu,
     showNotifications, confirmModal,
     branches, allBranches, users, categories, operations, orders, cashRows,
     messages, employees, payrollRuns, payrollItems, company, branchTelegrams,
