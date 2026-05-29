@@ -1,4 +1,4 @@
-const CACHE_VER = 'sb-finance-v7'
+const CACHE_VER = 'sb-finance-v8'
 const BASE      = '/sariq-bola-finance'
 
 self.addEventListener('install', e => {
