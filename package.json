@@ -1,27 +1,58 @@
 {
   "name": "sariq-bola-finance",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
-
+  "main": "electron/main.cjs",
+  "author": "Sariq Bola Pizza",
+  "description": "Sariq Bola Pizza moliyaviy boshqaruv tizimi",
   "homepage": "https://kimsanovhikmatillo1218-cell.github.io/sariq-bola-finance/",
-
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron": "electron electron/main.cjs",
+    "electron:build": "electron-builder --win --x64"
   },
-
+  "build": {
+    "appId": "com.sariqbola.finance",
+    "productName": "Sariq Bola Finance",
+    "copyright": "Sariq Bola Pizza",
+    "files": [
+      "electron/**/*",
+      "public/icon-192.png",
+      "public/icon-512.png",
+      "public/favicon.svg"
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "public/icon-512.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SB Finance"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/icon-512.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/icon-512.png"
+    }
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "xlsx": "^0.18.5"
   },
-
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
