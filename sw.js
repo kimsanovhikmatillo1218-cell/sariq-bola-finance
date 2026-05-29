@@ -1,61 +1,36 @@
-const CACHE_VER = 'sb-finance-v9'
-const BASE      = '/sariq-bola-finance'
+// Network-only: kesh saqlanmaydi, har doim serverdan yuklanadi
+const BASE = '/sariq-bola-finance'
 
-self.addEventListener('install', e => {
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 
 self.addEventListener('activate', e => {
+  // Barcha eski keshlarni o'chirish
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.map(k => caches.delete(k))))  // delete ALL caches
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
       .then(() => self.clients.claim())
-      .then(() => {
-        // Tell every open tab to reload so it gets the fresh bundle
-        return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-          .then(clients => clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' })))
-      })
   )
 })
 
+// Kesh SAQLANMAYDI — har doim tarmoqdan yuklanadi
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return
+  // Supabase API so'rovlarini o'tkazib yuborish
   if (e.request.url.includes('supabase')) return
-
-  // Navigation: always try network first, fallback to cached index.html
-  if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request)
-        .then(res => {
-          const clone = res.clone()
-          caches.open(CACHE_VER).then(c => c.put(e.request, clone))
-          return res
-        })
-        .catch(() => caches.match(BASE + '/index.html'))
-    )
-    return
-  }
-
-  // Static assets: network first so updates are instant, cache as fallback
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        if (res.ok) {
-          const clone = res.clone()
-          caches.open(CACHE_VER).then(c => c.put(e.request, clone))
-        }
-        return res
-      })
-      .catch(() => caches.match(e.request))
-  )
+  // Boshqa barcha so'rovlar bevosita tarmoqdan
+  // (kesh yozilmaydi, faqat o'qiladi — ammo kesh bo'sh)
 })
 
+// Push bildirishnomalari (kesh bilan bog'liq emas)
 self.addEventListener('push', e => {
   if (!e.data) return
   const { title, body, icon } = e.data.json()
   e.waitUntil(
     self.registration.showNotification(title, {
-      body, icon: icon || BASE + '/favicon.svg',
+      body,
+      icon: icon || BASE + '/favicon.svg',
       badge: BASE + '/favicon.svg',
       vibrate: [200, 100, 200]
     })
