@@ -1,22 +1,21 @@
 const { app, BrowserWindow, shell, Menu, nativeImage, Tray } = require('electron')
-const path  = require('path')
-const https = require('https')
+const path = require('path')
+const fs   = require('fs')
 
 const APP_URL  = 'https://kimsanovhikmatillo1218-cell.github.io/sariq-bola-finance/'
 const APP_NAME = 'Sariq Bola Finance'
 const WIN_W    = 1280
 const WIN_H    = 820
 
+// Prefer the locally-built bundle (fast, works offline).
+// Falls back to GitHub Pages if the local build doesn't exist.
+const LOCAL_INDEX = path.join(__dirname, '..', 'dist-electron', 'index.html')
+const LOAD_URL    = fs.existsSync(LOCAL_INDEX)
+  ? `file://${LOCAL_INDEX.replace(/\\/g, '/')}`
+  : APP_URL
+
 let mainWindow = null
 let tray       = null
-
-function checkNetwork(cb) {
-  const req = https.get('https://kimsanovhikmatillo1218-cell.github.io', res => {
-    cb(res.statusCode < 500)
-  })
-  req.on('error', () => cb(false))
-  req.setTimeout(5000, () => { req.destroy(); cb(false) })
-}
 
 function createWindow() {
   const iconPath = path.join(__dirname, '..', 'public', 'icon-512.png')
@@ -37,15 +36,21 @@ function createWindow() {
       allowRunningInsecureContent: false,
     },
     autoHideMenuBar: true,
-    show: false,    // show after ready-to-show to avoid white flash
+    show: false,   // avoid white flash before content is ready
   })
 
-  // Show loading screen first, then load real URL
-  mainWindow.loadURL(APP_URL)
+  mainWindow.loadURL(LOAD_URL)
 
   mainWindow.once('ready-to-show', () => {
+    mainWindow.setTitle(APP_NAME)   // keep title clean
     mainWindow.show()
     mainWindow.focus()
+  })
+
+  // Keep title clean after every navigation (SPA route changes, etc.)
+  mainWindow.webContents.on('page-title-updated', (e) => {
+    e.preventDefault()
+    mainWindow.setTitle(APP_NAME)
   })
 
   // Open external links in the default browser, not inside the app
@@ -71,26 +76,15 @@ function createTray() {
     tray.setContextMenu(menu)
     tray.on('double-click', () => { if (mainWindow) { mainWindow.show(); mainWindow.focus() } })
   } catch (e) {
-    // Tray icon is optional — continue without it if creation fails
+    // Tray is optional — continue without it if creation fails
   }
 }
 
 // ── App lifecycle ────────────────────────────────────────────
 app.whenReady().then(() => {
-  // Remove default menu bar
   Menu.setApplicationMenu(null)
-
   createWindow()
   createTray()
-
-  // Connectivity check — if offline show a retry prompt via title
-  checkNetwork(ok => {
-    if (!ok && mainWindow) {
-      mainWindow.webContents.executeJavaScript(`
-        document.title = 'SB Finance — Internet yo\\'q, sahifa yuklanmoqda...'
-      `).catch(() => {})
-    }
-  })
 })
 
 app.on('window-all-closed', () => {

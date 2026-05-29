@@ -1,5 +1,6 @@
+import _logoSrc from '../assets/logo.jpg'
 export const BASE         = import.meta.env.VITE_SUPABASE_URL
-export const LOGO         = '/sariq-bola-finance/logo.jpg'
+export const LOGO         = _logoSrc
 export const BRANCH_ORDER = ['PROSPEKT','MAKRO',"QO'QON",'ANDIJON']
 export const ACCOUNTS     = ['Naqd','Hisob raqam']
 export const OP_TYPE      = { INCOME:'Kirim', EXPENSE:'Chiqim' }

@@ -14,8 +14,9 @@
     "deploy": "gh-pages -d dist",
     "lint": "eslint .",
     "preview": "vite preview",
-    "electron": "electron electron/main.cjs",
-    "electron:build": "electron-builder --win --x64"
+    "build:electron": "vite build --mode electron && node electron/postbuild.cjs",
+    "electron": "npm run build:electron && electron electron/main.cjs",
+    "electron:build": "npm run build:electron && electron-builder --win --x64"
   },
   "build": {
     "appId": "com.sariqbola.finance",
@@ -23,8 +24,10 @@
     "copyright": "Sariq Bola Pizza",
     "files": [
       "electron/**/*",
+      "dist-electron/**/*",
       "public/icon-192.png",
       "public/icon-512.png",
+      "public/apple-icon.png",
       "public/favicon.svg"
     ],
     "win": {
