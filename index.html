@@ -20,7 +20,13 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {})
+          // Unregister ALL old service workers first, then register fresh
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(r => r.unregister())
+          })
+          navigator.serviceWorker.register('/sariq-bola-finance/sw.js', {
+            scope: '/sariq-bola-finance/'
+          }).catch(() => {})
         })
       }
     </script>

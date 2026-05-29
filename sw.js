@@ -1,31 +1,44 @@
-const CACHE = 'sb-finance-v1'
-const ASSETS = ['/', '/index.html']
+const CACHE_VER = 'sb-finance-v5'
+const BASE      = '/sariq-bola-finance'
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)))
   self.skipWaiting()
 })
 
 self.addEventListener('activate', e => {
+  // Delete ALL old caches on every activate so stale JS/CSS never gets served
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
+      Promise.all(keys.filter(k => k !== CACHE_VER).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   )
-  self.clients.claim()
 })
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return
-  if (e.request.url.includes('supabase')) return // don't cache API
+  // Never cache Supabase API calls
+  if (e.request.url.includes('supabase')) return
+
+  // Navigation requests: network first, fallback to cached index
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(BASE + '/index.html'))
+    )
+    return
+  }
+
+  // Static assets: cache first
   e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        const clone = res.clone()
-        caches.open(CACHE).then(c => c.put(e.request, clone))
+    caches.match(e.request).then(cached => {
+      const networkFetch = fetch(e.request).then(res => {
+        if (res.ok) {
+          const clone = res.clone()
+          caches.open(CACHE_VER).then(c => c.put(e.request, clone))
+        }
         return res
       })
-      .catch(() => caches.match(e.request))
+      return cached || networkFetch
+    })
   )
 })
 
@@ -34,8 +47,8 @@ self.addEventListener('push', e => {
   const { title, body, icon } = e.data.json()
   e.waitUntil(
     self.registration.showNotification(title, {
-      body, icon: icon || '/favicon.svg',
-      badge: '/favicon.svg',
+      body, icon: icon || BASE + '/favicon.svg',
+      badge: BASE + '/favicon.svg',
       vibrate: [200, 100, 200]
     })
   )
@@ -43,5 +56,5 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close()
-  e.waitUntil(clients.openWindow('/'))
+  e.waitUntil(clients.openWindow(BASE + '/'))
 })
