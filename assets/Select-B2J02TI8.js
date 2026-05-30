@@ -1,0 +1,1 @@
+import{t as e}from"./vendor-react-Bg0cp3QJ.js";var t=e();function n({label:e,value:n,set:r,opts:i,display:a}){return(0,t.jsxs)(`div`,{className:`field`,children:[(0,t.jsx)(`label`,{children:e}),(0,t.jsx)(`select`,{value:n??``,onChange:e=>r(e.target.value),children:i.map(e=>(0,t.jsx)(`option`,{value:e,children:a?a(e):e},e))})]})}export{n as t};

@@ -1,0 +1,1 @@
+import{t as e}from"./vendor-react-Bg0cp3QJ.js";var t=e();function n({title:e,children:n}){return(0,t.jsxs)(`div`,{className:`panel entrance`,children:[e&&(0,t.jsx)(`h2`,{className:`panelTitle`,children:e}),n]})}export{n as t};
